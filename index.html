@@ -511,7 +511,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
         </div>
         <div class="mobile-cards" id="adminMobileCards"></div>
         <div class="empty-state" id="adminEmpty" style="display: block;"><div class="big">📦</div><div>کالایی نیست</div></div>
-        <div class="sync-log" id="syncLog"><div>✅</div><div>آپلود...</div><div>✅</div>آماده...</div>
+        <div class="sync-log" id="syncLog"><div>✅</div><div>آپلود...</div><div>✅</div><div>آپلود...</div><div>✅</div>آماده...</div>
       </div>
     </div>
 
@@ -1388,6 +1388,7 @@ function saveReminderModal(){
   if(!text){toast("متن یادآور را وارد کن",1);return}
   var dueDate=jDateSelectToISO("rem");
   if(!dueDate){toast("تاریخ نامعتبر است",1);return}
+  var nowR=new Date().toISOString();
   APP.reminders.push({
     id:"r"+Date.now()+Math.random(),
     customerId:customerId,
@@ -1397,7 +1398,8 @@ function saveReminderModal(){
     text:text,
     dueDate:dueDate,
     completed:false,
-    createdAt:new Date().toISOString()
+    createdAt:nowR,
+    updatedAt:nowR
   });
   saveLocal();
   $("modalReminder").classList.remove("show");
@@ -1439,7 +1441,7 @@ function renderMyReminders(){
 
 function toggleReminder(id){
   var r=APP.reminders.find(function(x){return x.id===id});
-  if(r)r.completed=!r.completed;
+  if(r){r.completed=!r.completed;r.updatedAt=new Date().toISOString();}
   saveLocal();
   updateBell();
   renderMyReminders();
@@ -1484,7 +1486,8 @@ function saveCustomer(){
   if(!shop){toast("نام؟",1);return}
   if(phone&&!isValidPhone(phone)){toast("شماره تلفن نامعتبر است (۱۰ یا ۱۱ رقم)",1);return}
   if(APP.editingCustomerId){
-    APP.customers.forEach(function(c){if(c.id===APP.editingCustomerId){c.shop=shop;c.owner=owner;c.phone=phone;c.note=$("customerNote").value.trim()}});
+    var nowC=new Date().toISOString();
+    APP.customers.forEach(function(c){if(c.id===APP.editingCustomerId){c.shop=shop;c.owner=owner;c.phone=phone;c.note=$("customerNote").value.trim();c.updatedAt=nowC}});
   }else{
     var dup=APP.customers.find(function(c){
       if(c.visitor!==APP.currentVisitor)return false;
@@ -1495,7 +1498,8 @@ function saveCustomer(){
     if(dup){
       if(!confirm("⚠️ مشتری «"+(dup.owner||dup.shop)+"» با همین صاحب یا شماره قبلاً ثبت شده.\nباز هم ذخیره شود؟"))return;
     }
-    APP.customers.push({id:"c"+Date.now(),shop:shop,owner:owner,phone:phone,note:$("customerNote").value.trim(),visitor:APP.currentVisitor,createdAt:new Date().toISOString(),lastVisit:null});
+    var nowC2=new Date().toISOString();
+    APP.customers.push({id:"c"+Date.now(),shop:shop,owner:owner,phone:phone,note:$("customerNote").value.trim(),visitor:APP.currentVisitor,createdAt:nowC2,updatedAt:nowC2,lastVisit:null});
   }
   saveLocal();$("modalCustomer").classList.remove("show");
   if(APP.currentMode==="customers")renderMyCustomers();
@@ -1555,20 +1559,22 @@ function renderVisitorProducts(){
 }
 function updateField(id,field,val){
   if(!APP.isAdmin){toast("دسترسی نداری",1);return}
-  APP.products.forEach(function(p){if(p.id===id){if(field==="cashPrice"||field==="checkPrice")p[field]=parseNum(val);else p[field]=val}});
+  APP.products.forEach(function(p){if(p.id===id){if(field==="cashPrice"||field==="checkPrice")p[field]=parseNum(val);else p[field]=val;p.updatedAt=new Date().toISOString()}});
   autoSave();renderVisitorProducts();
 }
 function addManual(){
   var n=$("manualName").value.trim();
   if(!n){toast("نام؟",1);return}
   if(APP.products.some(function(p){return p.name===n})){toast("تکراری",1);return}
-  APP.products.push({id:Date.now(),name:n,cashPrice:"",checkPrice:"",maxMonths:"2",images:[]});
+  var now=new Date().toISOString();
+  APP.products.push({id:Date.now(),name:n,cashPrice:"",checkPrice:"",maxMonths:"2",images:[],createdAt:now,updatedAt:now});
   $("manualName").value="";
   saveLocal();renderAll();toast("اضافه شد");
 }
 function loadSample(){
   [{name:"گوشی سامسونگ A54",c:12500000,k:13200000,m:"3"},{name:"آیفون 15 Pro Max",c:72000000,k:76000000,m:"4"},{name:"ایرپاد پرو 2",c:8500000,k:9000000,m:"2"},{name:"شارژر ۶۵ وات",c:850000,k:950000,m:"1"},{name:"قاب سامسونگ",c:350000,k:400000,m:"1"}].forEach(function(s){
-    if(!APP.products.some(function(p){return p.name===s.name}))APP.products.push({id:Date.now()+Math.random()*10000,name:s.name,cashPrice:s.c,checkPrice:s.k,maxMonths:s.m,images:[]});
+    var now4=new Date().toISOString();
+    if(!APP.products.some(function(p){return p.name===s.name}))APP.products.push({id:Date.now()+Math.random()*10000,name:s.name,cashPrice:s.c,checkPrice:s.k,maxMonths:s.m,images:[],createdAt:now4,updatedAt:now4});
   });
   saveLocal();renderAll();toast("نمونه ✅");
 }
@@ -1585,7 +1591,7 @@ function saveEditProduct(){
   var p=APP.products.find(function(x){return x.id===APP.editingProductId});if(!p)return;
   var n=$("editName").value.trim();
   if(!n){toast("نام؟",1);return}
-  p.name=n;p.cashPrice=parseNum($("editCash").value);p.checkPrice=parseNum($("editCheck").value);p.maxMonths=$("editMonths").value;
+  p.name=n;p.cashPrice=parseNum($("editCash").value);p.checkPrice=parseNum($("editCheck").value);p.maxMonths=$("editMonths").value;p.updatedAt=new Date().toISOString();
   saveLocal();renderAll();$("modalEditProduct").classList.remove("show");APP.editingProductId=null;toast("ذخیره شد");
 }
 function deleteProduct(id){if(!confirm("حذف؟"))return;APP.products=APP.products.filter(function(p){return p.id!==id});saveLocal();renderAll();toast("حذف شد")}
@@ -1628,7 +1634,7 @@ function handleExcel(e){
         var name,cp="",kp="",mm="2";
         if(full){name=String(row[1]||row[0]||"").trim();cp=parseNum(row[2])||"";kp=parseNum(row[3])||"";mm=String(row[4]||"2").replace(/\D/g,"")||"2"}
         else name=String(row[0]||"").trim();
-        if(name&&!APP.products.some(function(p){return p.name===name})){APP.products.push({id:Date.now()+i+Math.random()*1000,name:name,cashPrice:cp,checkPrice:kp,maxMonths:mm,images:[]});added++}
+        if(name&&!APP.products.some(function(p){return p.name===name})){var now2=new Date().toISOString();APP.products.push({id:Date.now()+i+Math.random()*1000,name:name,cashPrice:cp,checkPrice:kp,maxMonths:mm,images:[],createdAt:now2,updatedAt:now2});added++}
       }
       saveLocal();renderAll();toast(toPe(added)+" اضافه شد");
     }catch(err){toast("خطا",1)}
@@ -1648,7 +1654,7 @@ function handleOCR(e){
       text.split("\n").forEach(function(line){
         line=line.trim();
         if(line.length<3||line.replace(/[\d\s,.\-\/\\|()]/g,"").length<2)return;
-        if(!APP.products.some(function(p){return p.name===line})){APP.products.push({id:Date.now()+Math.random()*1000,name:line,cashPrice:"",checkPrice:"",maxMonths:"2",images:[]});added++}
+        if(!APP.products.some(function(p){return p.name===line})){var now3=new Date().toISOString();APP.products.push({id:Date.now()+Math.random()*1000,name:line,cashPrice:"",checkPrice:"",maxMonths:"2",images:[],createdAt:now3,updatedAt:now3});added++}
       });
       saveLocal();renderAll();toast(toPe(added)+" خط");
     }).catch(function(){toast("خطا",1)});
@@ -1786,9 +1792,11 @@ function finalizeOrder(){
   if(editing){
     o=APP.orders.find(function(x){return x.id===APP.editingOrderId});
     if(!o){APP.editingOrderId=null;toast("فاکتور یافت نشد",1);return}
-    o.cust=cn;o.phone=cp;o.note=nt;o.items=items;o.tc=tc;o.tk=tk;o.tq=tq;o.paymentMethod=paymentMethod;o.editedAt=new Date().toISOString();
+    var nowE=new Date().toISOString();
+    o.cust=cn;o.phone=cp;o.note=nt;o.items=items;o.tc=tc;o.tk=tk;o.tq=tq;o.paymentMethod=paymentMethod;o.editedAt=nowE;o.updatedAt=nowE;
   }else{
-    o={id:"o"+Date.now(),num:genInvoiceNo(),vis:APP.currentVisitor,cust:cn,phone:cp,note:nt,items:items,tc:tc,tk:tk,tq:tq,paymentMethod:paymentMethod,at:new Date().toISOString()};
+    var nowO=new Date().toISOString();
+    o={id:"o"+Date.now(),num:genInvoiceNo(),vis:APP.currentVisitor,cust:cn,phone:cp,note:nt,items:items,tc:tc,tk:tk,tq:tq,paymentMethod:paymentMethod,at:nowO,createdAt:nowO,updatedAt:nowO};
     APP.orders.push(o);
   }
   APP.lastInvoice=o;
@@ -1804,24 +1812,21 @@ function finalizeOrder(){
       if((c.shop===cn||c.owner===cn)&&c.visitor===APP.currentVisitor&&!exByPhone)exByName=c;
     });
     if(exByPhone){
-      exByPhone.lastVisit=o.at;custId=exByPhone.id;
+      exByPhone.lastVisit=o.at;exByPhone.updatedAt=o.at;custId=exByPhone.id;
     }else if(exByName){
-      // مشتری با همین اسم ولی شماره متفاوت پیدا شد
       var userChoice=confirm("⚠️ مشتری «"+cn+"» قبلاً با شماره "+exByName.phone+" ثبت شده.\n\nتأیید کن → مشتری جدید ثبت بشه با این شماره جدید\nرد کن → فاکتور فقط برای این بار با شماره جدید ارسال بشه (مشتری قبلی تغییر نمی‌کنه)");
       if(userChoice){
         custId="c"+Date.now();isNewCustomer=true;
-        APP.customers.push({id:custId,shop:cn,owner:"",phone:cp,note:"",visitor:APP.currentVisitor,createdAt:o.at,lastVisit:o.at});
+        APP.customers.push({id:custId,shop:cn,owner:"",phone:cp,note:"",visitor:APP.currentVisitor,createdAt:o.at,updatedAt:o.at,lastVisit:o.at});
         toast("✅ مشتری جدید اضافه شد");
       }else{
-        exByName.lastVisit=o.at;custId=exByName.id;
-        // شماره فقط در این فاکتور استفاده می‌شه، مشتری قبلی تغییر نمی‌کنه
-        // o.phone همون cp هست که ویزیتور وارد کرده - برای ارسال واتساپ به این شماره
+        exByName.lastVisit=o.at;exByName.updatedAt=o.at;custId=exByName.id;
         toast("ℹ️ فاکتور با شماره جدید ثبت شد (مشتری قبلی)");
       }
     }else if(cn){
       if(!confirm("❓ مشتری جدید است؟\nنام: "+cn+"\nتلفن: "+cp+"\n\nثبت کنم؟")){return}
       custId="c"+Date.now();isNewCustomer=true;
-      APP.customers.push({id:custId,shop:cn,owner:"",phone:cp,note:"",visitor:APP.currentVisitor,createdAt:o.at,lastVisit:o.at});
+      APP.customers.push({id:custId,shop:cn,owner:"",phone:cp,note:"",visitor:APP.currentVisitor,createdAt:o.at,updatedAt:o.at,lastVisit:o.at});
       toast("✅ مشتری جدید اضافه شد");
     }
   }else{
@@ -1832,7 +1837,8 @@ function finalizeOrder(){
     var crNote=$("cartReminderNote").value.trim();
     var crDate=jDateSelectToISO("cartRem");
     if(crNote&&crDate){
-      APP.reminders.push({id:"r"+Date.now()+Math.random(),visitor:APP.currentVisitor,customerId:custId,shop:cn,phone:cp,text:crNote,dueDate:crDate,completed:false,createdAt:new Date().toISOString()});
+      var nowCR=new Date().toISOString();
+      APP.reminders.push({id:"r"+Date.now()+Math.random(),visitor:APP.currentVisitor,customerId:custId,shop:cn,phone:cp,text:crNote,dueDate:crDate,completed:false,createdAt:nowCR,updatedAt:nowCR});
     }
   }
 
@@ -2126,14 +2132,15 @@ function saveVisit(){
   if(vPhone&&!isValidPhone(vPhone)){toast("شماره تلفن نامعتبر است (۱۰ یا ۱۱ رقم)",1);return}
   if(!APP.currentLocation&&!confirm("بدون GPS؟"))return;
 
-  var v={id:Date.now()+Math.random(),visitor:APP.currentVisitor,shop:sh,owner:$("visitOwner").value.trim(),phone:$("visitPhone").value.trim(),note:$("visitNote").value.trim(),status:$("visitStatus").value,lat:APP.currentLocation?APP.currentLocation.lat:null,lng:APP.currentLocation?APP.currentLocation.lng:null,createdAt:new Date().toISOString()};
+  var now=new Date().toISOString();
+  var v={id:Date.now()+Math.random(),visitor:APP.currentVisitor,shop:sh,owner:$("visitOwner").value.trim(),phone:$("visitPhone").value.trim(),note:$("visitNote").value.trim(),status:$("visitStatus").value,lat:APP.currentLocation?APP.currentLocation.lat:null,lng:APP.currentLocation?APP.currentLocation.lng:null,createdAt:now,updatedAt:now};
   APP.visits.push(v);
 
   if($("saveAsCustomer").checked&&v.phone){
     var ex=null;
     APP.customers.forEach(function(c){if(normPhone(c.phone)===normPhone(v.phone)&&c.visitor===APP.currentVisitor)ex=c});
-    if(ex)ex.lastVisit=v.createdAt;
-    else APP.customers.push({id:"c"+Date.now(),shop:sh,owner:v.owner,phone:v.phone,note:"",visitor:APP.currentVisitor,createdAt:v.createdAt,lastVisit:v.createdAt});
+    if(ex){ex.lastVisit=v.createdAt;ex.updatedAt=now;}
+    else APP.customers.push({id:"c"+Date.now(),shop:sh,owner:v.owner,phone:v.phone,note:"",visitor:APP.currentVisitor,createdAt:now,updatedAt:now,lastVisit:now});
   }
 
   // reminder
@@ -2142,7 +2149,7 @@ var rn=$("reminderNote").value.trim();
 if(rn&&rd){
   var custId=null;
   APP.customers.forEach(function(c){if(c.shop===sh&&c.visitor===APP.currentVisitor)custId=c.id});
-  APP.reminders.push({id:"r"+Date.now()+Math.random(),visitor:APP.currentVisitor,customerId:custId,shop:sh,phone:v.phone||"",text:rn,dueDate:rd,completed:false,createdAt:new Date().toISOString()})
+  APP.reminders.push({id:"r"+Date.now()+Math.random(),visitor:APP.currentVisitor,customerId:custId,shop:sh,phone:v.phone||"",text:rn,dueDate:rd,completed:false,createdAt:now,updatedAt:now})
 }
 
   saveLocal();
@@ -2401,6 +2408,54 @@ function renderAdvancedReports(){
 }
 
 // JSONBIN
+// ─── merge helpers ───────────────────────────────────────────────────────────
+// برای هر آرایه، آیتم‌ها رو بر اساس id با هم merge می‌کنه.
+// هر آیتمی که در local هست ولی cloud نداره → اضافه میشه
+// هر آیتمی که در cloud هست ولی local نداره → اضافه میشه
+// اگه هر دو دارن → آیتمی که updatedAt جدیدتر داره برنده‌ست (اگه فیلد نداشت local برنده)
+function mergeById(localArr,remoteArr){
+  var result=[];
+  var seen={};
+  // ابتدا remote را اضافه کن
+  remoteArr.forEach(function(r){
+    if(!r||!r.id)return;
+    result.push(r);seen[String(r.id)]=result.length-1;
+  });
+  // حالا local را merge کن
+  localArr.forEach(function(l){
+    if(!l||!l.id)return;
+    var key=String(l.id);
+    if(seen[key]!==undefined){
+      // هر دو دارن → جدیدتر برنده
+      var existing=result[seen[key]];
+      var lTime=l.updatedAt||l.createdAt||"";
+      var rTime=existing.updatedAt||existing.createdAt||"";
+      if(lTime>=rTime)result[seen[key]]=l; // local جدیدتر یا برابر
+    }else{
+      // فقط local داره → اضافه کن
+      result.push(l);seen[key]=result.length-1;
+    }
+  });
+  return result;
+}
+// ویزیتورها id ندارن، بر اساس name merge می‌کنیم
+function mergeVisitors(localArr,remoteArr){
+  var result=remoteArr.slice();
+  localArr.forEach(function(lv){
+    if(!result.some(function(rv){return rv.name===lv.name})){
+      result.push(lv);
+    }else{
+      // هر دو دارن → local password را حفظ کن اگه تنظیم شده
+      result=result.map(function(rv){
+        if(rv.name===lv.name&&lv.password)return lv;
+        return rv;
+      });
+    }
+  });
+  return result;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function uploadMeta(s){
   if(!CFG.jbKey||!CFG.jbMetaBin){if(!s)toast("Bin نیست",1);return}
   fetch("https://api.jsonbin.io/v3/b/"+CFG.jbMetaBin,{
@@ -2416,25 +2471,23 @@ function downloadMeta(s){
     .then(function(d){
       if(d.record){
         if(d.record.visitors){
-          var remoteVisitors=d.record.visitors;
-          remoteVisitors.forEach(function(v,i){if(typeof v==="string")remoteVisitors[i]={name:v,password:""}});
-          // merge: local visitors + remote visitors (local takes priority)
-          var merged=remoteVisitors.slice();
-          APP.visitors.forEach(function(lv){
-            if(!merged.some(function(rv){return rv.name===lv.name})){
-              merged.push(lv);
-            }
-          });
-          APP.visitors=merged;
+          var rv=d.record.visitors;
+          rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
+          APP.visitors=mergeVisitors(APP.visitors,rv);
         }
-        if(d.record.visits)APP.visits=d.record.visits;
-        if(d.record.customers)APP.customers=d.record.customers;
-        if(d.record.orders)APP.orders=d.record.orders;
-        if(d.record.reminders)APP.reminders=d.record.reminders;
+        if(d.record.visits)
+          APP.visits=mergeById(APP.visits,d.record.visits);
+        if(d.record.customers)
+          APP.customers=mergeById(APP.customers,d.record.customers);
+        if(d.record.orders)
+          APP.orders=mergeById(APP.orders,d.record.orders);
+        if(d.record.reminders)
+          APP.reminders=mergeById(APP.reminders,d.record.reminders);
         saveLocal();
-        // after merging, re-upload so cloud is also up to date
-        if(s)setTimeout(function(){uploadMeta(true)},500);
-        if(!s){toast("دریافت ✅");renderAll();updateTopUI();}
+        renderAll();updateTopUI();
+        // بعد از merge، نسخه کامل رو آپلود کن تا cloud هم sync بشه
+        setTimeout(function(){uploadMeta(true)},600);
+        if(!s)toast("دریافت ✅");
       }
     }).catch(function(){if(!s)toast("خطا",1)});
 }
@@ -2453,9 +2506,14 @@ function downloadProductsJB(s){
     .then(function(r){return r.json()})
     .then(function(d){
       if(d.record&&d.record.products){
-        APP.products=d.record.products;
+        var remote=d.record.products;
+        remote.forEach(function(p){if(!p.images)p.images=[]});
+        APP.products=mergeById(APP.products,remote);
         APP.products.forEach(function(p){if(!p.images)p.images=[]});
-        saveLocal();renderAll();logSync("✅");if(!s)toast(toPe(APP.products.length)+" کالا");
+        saveLocal();renderAll();logSync("✅");
+        // بعد از merge، آپلود کن
+        setTimeout(function(){uploadProductsJB(true)},600);
+        if(!s)toast(toPe(APP.products.length)+" کالا");
       }
     }).catch(function(){logSync("❌");if(!s)toast("خطا",1)});
 }
