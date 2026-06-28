@@ -414,8 +414,8 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       </div>
     </div>
     <div class="header-right">
-      <div class="badge badge-dark" id="dateView">۱۴۰۵/۰۴/۰۷</div>
-      <div class="badge badge-blue" id="countView">۰ کالا</div>
+      <div class="badge badge-dark" id="dateView">۱۴۰۵/۰۴/۰۸</div>
+      <div class="badge badge-blue" id="countView">۲ کالا</div>
       <div class="badge badge-orange" id="currentVisitorBadge" style="" onclick="changeVisitor()">👤 <span id="currentVisitorName">شیرازیان</span></div>
       <button class="bell-btn" id="bellBtn" onclick="toggleTodayPanel()">🔔<span class="bell-badge hide" id="bellBadge">۰</span></button>
       <button class="user-status visitor" id="userStatus"><span id="userStatusIcon">👤</span><span id="userStatusText">ویزیتور</span></button>
@@ -506,11 +506,11 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
                 <th style="width:80px">عملیات</th>
               </tr>
             </thead>
-            <tbody id="adminBody"></tbody>
+            <tbody id="adminBody"><tr><td><input type="checkbox" class="product-check" onchange="toggleSelect(1782676949526,this.checked)"></td><td class="row-num">۱</td><td class="p-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></td><td><input class="edit-input" type="text" inputmode="numeric" value="۲۰۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'cashPrice',this.value)" onblur="updateField(1782676949526,'cashPrice',this.value)"></td><td><input class="edit-input" type="text" inputmode="numeric" value="۲۱۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'checkPrice',this.value)" onblur="updateField(1782676949526,'checkPrice',this.value)"></td><td><select class="edit-input" onchange="updateField(1782676949526,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9" selected="">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></td><td><button class="icon-btn" onclick="openEditProduct(1782676949526)">✏️</button><button class="icon-btn" onclick="deleteProduct(1782676949526)">🗑️</button></td></tr><tr><td><input type="checkbox" class="product-check" onchange="toggleSelect(1782676956862,this.checked)"></td><td class="row-num">۲</td><td class="p-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></td><td><input class="edit-input" type="text" inputmode="numeric" value="۱۰۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'cashPrice',this.value)" onblur="updateField(1782676956862,'cashPrice',this.value)"></td><td><input class="edit-input" type="text" inputmode="numeric" value="۱۲۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'checkPrice',this.value)" onblur="updateField(1782676956862,'checkPrice',this.value)"></td><td><select class="edit-input" onchange="updateField(1782676956862,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3" selected="">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></td><td><button class="icon-btn" onclick="openEditProduct(1782676956862)">✏️</button><button class="icon-btn" onclick="deleteProduct(1782676956862)">🗑️</button></td></tr></tbody>
           </table>
         </div>
-        <div class="mobile-cards" id="adminMobileCards"></div>
-        <div class="empty-state" id="adminEmpty" style="display: block;"><div class="big">📦</div><div>کالایی نیست</div></div>
+        <div class="mobile-cards" id="adminMobileCards"><div class="mobile-admin-card"><div class="mac-top"><input type="checkbox" class="product-check mac-check" onchange="toggleSelect(1782676949526,this.checked)"><div style="flex:1"><div class="mac-num">#۱</div><div class="mac-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></div></div></div><div class="mac-fields"><div><div class="mac-field-label">💵 نقدی</div><input class="edit-input" type="text" inputmode="numeric" value="۲۰۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'cashPrice',this.value)" onblur="updateField(1782676949526,'cashPrice',this.value)"></div><div><div class="mac-field-label">📝 چکی</div><input class="edit-input" type="text" inputmode="numeric" value="۲۱۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'checkPrice',this.value)" onblur="updateField(1782676949526,'checkPrice',this.value)"></div><div class="mac-field-full"><div class="mac-field-label">📅 ماه</div><select class="edit-input" onchange="updateField(1782676949526,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9" selected="">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></div></div><div class="mac-actions"><button class="btn btn-blue btn-sm" onclick="openEditProduct(1782676949526)">✏️</button><button class="btn btn-red btn-sm" onclick="deleteProduct(1782676949526)">🗑️</button></div></div><div class="mobile-admin-card"><div class="mac-top"><input type="checkbox" class="product-check mac-check" onchange="toggleSelect(1782676956862,this.checked)"><div style="flex:1"><div class="mac-num">#۲</div><div class="mac-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></div></div></div><div class="mac-fields"><div><div class="mac-field-label">💵 نقدی</div><input class="edit-input" type="text" inputmode="numeric" value="۱۰۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'cashPrice',this.value)" onblur="updateField(1782676956862,'cashPrice',this.value)"></div><div><div class="mac-field-label">📝 چکی</div><input class="edit-input" type="text" inputmode="numeric" value="۱۲۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'checkPrice',this.value)" onblur="updateField(1782676956862,'checkPrice',this.value)"></div><div class="mac-field-full"><div class="mac-field-label">📅 ماه</div><select class="edit-input" onchange="updateField(1782676956862,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3" selected="">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></div></div><div class="mac-actions"><button class="btn btn-blue btn-sm" onclick="openEditProduct(1782676956862)">✏️</button><button class="btn btn-red btn-sm" onclick="deleteProduct(1782676956862)">🗑️</button></div></div></div>
+        <div class="empty-state" id="adminEmpty" style="display: none;"><div class="big">📦</div><div>کالایی نیست</div></div>
         <div class="sync-log" id="syncLog"><div>✅</div><div>آپلود...</div><div>✅</div><div>آپلود...</div><div>✅</div>آماده...</div>
       </div>
     </div>
@@ -627,11 +627,11 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
               <th style="width:45px">🛒</th>
             </tr>
           </thead>
-          <tbody id="visitorBody"></tbody>
+          <tbody id="visitorBody"><tr><td class="row-num">۱</td><td class="p-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></td><td class="price-cash">۲۰۰ <span class="toman">ت</span></td><td class="price-check">۲۱۰ <span class="toman">ت</span></td><td class="price-months">۹ ماه</td><td><button class="add-cart-btn" onclick="addToCart(1782676949526)">➕</button></td></tr><tr><td class="row-num">۲</td><td class="p-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></td><td class="price-cash">۱۰۰ <span class="toman">ت</span></td><td class="price-check">۱۲۰ <span class="toman">ت</span></td><td class="price-months">۳ ماه</td><td><button class="add-cart-btn" onclick="addToCart(1782676956862)">➕</button></td></tr></tbody>
         </table>
       </div>
-      <div class="mobile-cards" id="visitorMobileCards"></div>
-      <div class="empty-state" id="visitorEmpty" style="display: block;"><div class="big">📱</div><div>کالایی نیست</div></div>
+      <div class="mobile-cards" id="visitorMobileCards"><div class="mobile-card"><div class="mc-header"><span class="mc-num">۱</span><div class="mc-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></div><button class="add-cart-btn" onclick="addToCart(1782676949526)" style="flex-shrink:0">➕</button></div><div class="mc-prices"><div class="mc-price-item"><div class="mc-price-label">💵 نقدی</div><div class="mc-price-value price-cash">۲۰۰ <span class="toman">ت</span></div></div><div class="mc-price-item"><div class="mc-price-label">📝 چکی</div><div class="mc-price-value price-check">۲۱۰ <span class="toman">ت</span></div></div></div><div class="mc-bottom"><span class="mc-months">📅 ۹ ماه</span></div></div><div class="mobile-card"><div class="mc-header"><span class="mc-num">۲</span><div class="mc-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></div><button class="add-cart-btn" onclick="addToCart(1782676956862)" style="flex-shrink:0">➕</button></div><div class="mc-prices"><div class="mc-price-item"><div class="mc-price-label">💵 نقدی</div><div class="mc-price-value price-cash">۱۰۰ <span class="toman">ت</span></div></div><div class="mc-price-item"><div class="mc-price-label">📝 چکی</div><div class="mc-price-value price-check">۱۲۰ <span class="toman">ت</span></div></div></div><div class="mc-bottom"><span class="mc-months">📅 ۳ ماه</span></div></div></div>
+      <div class="empty-state" id="visitorEmpty" style="display: none;"><div class="big">📱</div><div>کالایی نیست</div></div>
     </div>
   </div>
 
@@ -864,7 +864,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       <div class="cart-summary-row total"><span>📝 جمع چکی:</span><span class="price-check" id="cartTotalCheck">۰</span></div>
     </div>
     <div class="cart-customer-section" id="cartCustomerSection" style="display:none">
-      <label>🏪 مشتری (صاحب فروشگاه) *</label>
+      <label>👤 مشتری (صاحب فروشگاه) *</label>
       <input type="text" id="cartCustomerName" placeholder="نام صاحب فروشگاه" list="cartCustomerDatalist">
       <datalist id="cartCustomerDatalist"></datalist>
       <label>📞 تلفن</label>
@@ -920,9 +920,15 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     <h2>📷 تصاویر</h2>
     <div class="gallery-product-name" id="galleryProductName"></div>
     <div id="galleryContent"></div>
-    <div class="gallery-upload" style="margin-top:12px">
-      <input type="file" accept="image/*" capture="environment" id="galleryUploadFile">
-      <div class="icon">📸</div><p>افزودن عکس</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+      <div class="gallery-upload" style="position:relative">
+        <input type="file" accept="image/*" capture="environment" id="galleryUploadCamera" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+        <div class="icon">📷</div><p>دوربین</p>
+      </div>
+      <div class="gallery-upload" style="position:relative">
+        <input type="file" accept="image/*" id="galleryUploadFile" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+        <div class="icon">🖼️</div><p>گالری</p>
+      </div>
     </div>
     <div class="upload-progress" id="uploadProgress">⏳</div>
     <div class="btn-row"><button class="btn btn-gray" id="closeGalleryBtn" style="width:100%">✖️</button></div>
@@ -1419,21 +1425,25 @@ function renderMyReminders(){
     var r=mine[i];
     var remDateJ=fmtDate(r.dueDate);
     var isOverdue=r.dueDate<today&&!r.completed;
-    var statusColor=r.completed?'#64748b':isOverdue?'#ef4444':'#a78bfa';
+    var bgColor=r.completed?'var(--sf2)':isOverdue?'rgba(220,38,38,.07)':'rgba(167,139,250,.08)';
+    var borderColor=r.completed?'var(--bd)':isOverdue?'var(--red)':'var(--purple)';
+    var statusColor=r.completed?'var(--tx4)':isOverdue?'var(--red)':'var(--purple)';
     var statusLabel2=r.completed?'✅ تکمیل':isOverdue?'⚠️ تاخیر':'⏰ آینده';
-    html+='<div style="background:#111827;border:1px solid #1f2937;border-radius:10px;border-left:4px solid '+statusColor+';padding:10px;margin-bottom:8px">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
-    html+='<div style="flex:1">';
+    html+='<div style="background:'+bgColor+';border:1px solid '+borderColor+';border-right:4px solid '+borderColor+';border-radius:10px;padding:12px;margin-bottom:8px">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
+    html+='<div style="flex:1;min-width:0">';
     var remOwnerName=r.ownerName||(function(){var c=APP.customers.find(function(x){return x.id===r.customerId||(x.shop===r.shop&&x.visitor===r.visitor)});return c&&c.owner?c.owner:'';})();
-    html+='<div style="font-weight:700;color:var(--tx);font-size:.9rem">👤 '+esc(remOwnerName||r.shop||'—')+'</div>';
-    if(remOwnerName&&r.shop&&remOwnerName!==r.shop)html+='<div style="font-size:.75rem;color:var(--tx3)">🏪 '+esc(r.shop)+'</div>';
-    html+='<div style="font-size:.78rem;color:var(--tx2);margin:6px 0">'+esc(r.text||r.note||'')+'</div>';
-    html+='<div style="font-size:.7rem;color:'+statusColor+';font-weight:600">📅 '+remDateJ+' '+statusLabel2+'</div>';
+    html+='<div style="font-weight:700;color:var(--tx);font-size:.9rem;margin-bottom:4px">👤 '+esc(remOwnerName||r.shop||'—')+'</div>';
+    if(remOwnerName&&r.shop&&remOwnerName!==r.shop)html+='<div style="font-size:.75rem;color:var(--tx3);margin-bottom:4px">🏪 '+esc(r.shop)+'</div>';
+    html+='<div style="font-size:.82rem;color:var(--tx2);margin-bottom:6px;line-height:1.5">'+esc(r.text||r.note||'')+'</div>';
+    html+='<div style="font-size:.75rem;color:'+statusColor+';font-weight:600">📅 '+remDateJ+' · '+statusLabel2+'</div>';
     html+='</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
     html+=(r.phone?'<button class="btn btn-wa btn-sm" onclick="openWA(\''+esc(r.phone)+'\',\'سلام\')">💬</button>':'');
     html+='<button class="btn btn-red btn-sm" onclick="deleteReminder(\''+r.id+'\')">🗑️</button>';
     html+='</div>';
-    if(!r.completed)html+='<label style="display:block;margin-top:8px;color:var(--green);cursor:pointer;font-size:.78rem"><input type="checkbox" onchange="toggleReminder(\''+r.id+'\')"> تکمیل</label>';
+    html+='</div>';
+    if(!r.completed)html+='<label style="display:flex;align-items:center;gap:6px;margin-top:10px;color:var(--green);cursor:pointer;font-size:.82rem;font-weight:600"><input type="checkbox" onchange="toggleReminder(\''+r.id+'\')"> ✅ تکمیل شد</label>';
     html+='</div>';
   }
   $("remindersListContainer").innerHTML=html||'<div class="empty-state"><div class="big">⏰</div><div>یادآوری‌ای نیست</div></div>';
@@ -2588,6 +2598,7 @@ window.onload=function(){
 
   $("closeGalleryBtn").onclick=function(){$("modalGallery").classList.remove("show")};
   $("galleryUploadFile").onchange=handleGalleryUpload;
+  $("galleryUploadCamera").onchange=handleGalleryUpload;
 
   $("closeLightboxBtn").onclick=function(){$("lightbox").classList.remove("show")};
   $("lightbox").onclick=function(e){if(e.target.id==="lightbox")this.classList.remove("show")};
