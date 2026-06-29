@@ -480,8 +480,8 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       <div class="panel">
         <div class="panel-title">💰 لیست کالاها <span style="font-size:.7rem;color:var(--tx3)">ذخیره خودکار ✅</span></div>
         <div class="btn-row" style="margin-top:0;margin-bottom:12px">
-          <button class="btn btn-green btn-sm" id="uploadJBBtn">⬆️ آپلود</button>
-          <button class="btn btn-purple btn-sm" id="downloadJBBtn">⬇️ دریافت</button>
+          <button class="btn btn-green btn-sm" id="uploadJBBtn">⬆️ آپلود دستی</button>
+          <button class="btn btn-purple btn-sm" id="downloadJBBtn">⬇️ دریافت دستی</button>
           <button class="btn btn-blue btn-sm" id="saveLocalBtn">💾 ذخیره</button>
           <button class="btn btn-orange btn-sm" id="exportBtn2">📊 اکسل</button>
           <button class="btn btn-red btn-sm" id="clearAllBtn">🗑️ پاک</button>
@@ -953,13 +953,12 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
 <script>
 var CFG={
   adminPw:"1122",
-  jbKey:"$2a$10$4A1LpTVRtwzesf8X.Z4hzOueEqBa2hyZSfM0g9Gufv30gJ92gXKBG",
-  jbBin:"6a39220ada38895dfeeb19e7",
-  jbMetaBin:"6a425d77da38895dfe0fa85f",
   ocrKey:"K84210140188957",
   imgKey:"a4a8d28c200558fd141924779d5d3ebd",
   shopName:"پخش موبایل اهورا",
-  adminWA:"989371111558"
+  adminWA:"989371111558",
+  fbApiKey:"AIzaSyB41f5P7zJR9f--hSRNcRbw3qBV99nbknY",
+  fbDbUrl:"https://visitor-f97a3-default-rtdb.europe-west1.firebasedatabase.app"
 };
 
 var APP={
@@ -1157,7 +1156,7 @@ function saveLocal(){
   autoCloudSync();
 }
 function autoCloudSync(){
-  if(!CFG.jbKey)return;
+  if(!CFG.fbApiKey)return;
   clearTimeout(APP.cloudSyncTimer);
   APP.cloudSyncTimer=setTimeout(function(){
     if(!navigator.onLine)return;
@@ -2427,131 +2426,213 @@ function renderAdvancedReports(){
 // هر آیتمی که در local هست ولی cloud نداره → اضافه میشه
 // هر آیتمی که در cloud هست ولی local نداره → اضافه میشه
 // اگه هر دو دارن → آیتمی که updatedAt جدیدتر داره برنده‌ست (اگه فیلد نداشت local برنده)
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIREBASE REALTIME DATABASE - جایگزین JSONbin
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── merge helpers ────────────────────────────────────────────────────────────
 function mergeById(localArr,remoteArr){
   var result=[];
   var seen={};
-  // ابتدا remote را اضافه کن
   remoteArr.forEach(function(r){
     if(!r||!r.id)return;
     result.push(r);seen[String(r.id)]=result.length-1;
   });
-  // حالا local را merge کن
   localArr.forEach(function(l){
     if(!l||!l.id)return;
     var key=String(l.id);
     if(seen[key]!==undefined){
-      // هر دو دارن → جدیدتر برنده
       var existing=result[seen[key]];
       var lTime=l.updatedAt||l.createdAt||"";
       var rTime=existing.updatedAt||existing.createdAt||"";
-      if(lTime>=rTime)result[seen[key]]=l; // local جدیدتر یا برابر
+      if(lTime>=rTime)result[seen[key]]=l;
     }else{
-      // فقط local داره → اضافه کن
       result.push(l);seen[key]=result.length-1;
     }
   });
   return result;
 }
-// ویزیتورها id ندارن، بر اساس name merge می‌کنیم
-function mergeVisitors(localArr,remoteArr){
-  var result=remoteArr.slice();
-  localArr.forEach(function(lv){
-    if(!result.some(function(rv){return rv.name===lv.name})){
-      result.push(lv);
-    }else{
-      // هر دو دارن → local password را حفظ کن اگه تنظیم شده
-      result=result.map(function(rv){
-        if(rv.name===lv.name&&lv.password)return lv;
-        return rv;
+
+// ── Firebase REST helper ──────────────────────────────────────────────────────
+function fbUrl(path){
+  return CFG.fbDbUrl+"/"+path+".json?auth="+CFG.fbApiKey;
+}
+function fbGet(path,cb){
+  fetch(fbUrl(path)).then(function(r){return r.json()}).then(cb).catch(function(e){console.error("fbGet",e)});
+}
+function fbSet(path,data,cb){
+  fetch(fbUrl(path),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+    .then(function(r){if(!r.ok)throw 0;if(cb)cb()})
+    .catch(function(e){console.error("fbSet",e)});
+}
+function fbPatch(path,data,cb){
+  fetch(fbUrl(path),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+    .then(function(r){if(!r.ok)throw 0;if(cb)cb()})
+    .catch(function(e){console.error("fbPatch",e)});
+}
+
+// ── لاگ sync ─────────────────────────────────────────────────────────────────
+function logSync(m){
+  var el=$("syncLog");
+  if(el)el.innerHTML="<div>"+m+"</div>"+el.innerHTML;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// محصولات — فقط مدیر تغییر میده → remote همیشه مرجعه
+// ══════════════════════════════════════════════════════════════════════════════
+function uploadProductsJB(s){
+  if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  logSync("آپلود محصولات...");
+  var data={shopName:CFG.shopName,products:APP.products,updatedAt:Date.now()};
+  fbSet("products",data,function(){
+    logSync("✅ محصولات آپلود شد");
+    if(!s)toast("محصولات آپلود شد ✅");
+  });
+}
+
+function downloadProductsJB(s){
+  if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  fbGet("products",function(d){
+    if(d&&d.products){
+      var remote=d.products;
+      var localImgMap={};
+      APP.products.forEach(function(p){if(p.images&&p.images.length)localImgMap[p.id]=p.images});
+      // محصولات فقط مدیر تغییر میده → remote کاملاً جایگزین local میشه
+      APP.products=remote.map(function(p){
+        if(!p.images)p.images=[];
+        if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
+        return p;
       });
+      saveLocal();renderAll();logSync("✅ "+toPe(APP.products.length)+" کالا");
+      if(!s)toast(toPe(APP.products.length)+" کالا دریافت شد");
     }
   });
-  return result;
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Meta (ویزیتور، مشتری، سفارش، بازدید، یادآور)
+// هر کاربر تغییر میده → merge دو طرفه، جدیدتر برنده
+// ══════════════════════════════════════════════════════════════════════════════
 function uploadMeta(s){
-  if(!CFG.jbKey||!CFG.jbMetaBin){if(!s)toast("Bin نیست",1);return}
-  fetch("https://api.jsonbin.io/v3/b/"+CFG.jbMetaBin,{
-    method:"PUT",
-    headers:{"Content-Type":"application/json","X-Master-Key":CFG.jbKey},
-    body:JSON.stringify({visitors:APP.visitors,visits:APP.visits,customers:APP.customers,orders:APP.orders,reminders:APP.reminders})
-  }).then(function(r){if(!r.ok)throw 0;if(!s)toast("آپلود ✅")}).catch(function(){if(!s)toast("خطا",1)});
+  if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  var data={
+    visitors:APP.visitors,
+    visits:APP.visits,
+    customers:APP.customers,
+    orders:APP.orders,
+    reminders:APP.reminders,
+    updatedAt:Date.now()
+  };
+  fbSet("meta",data,function(){
+    if(!s)toast("همگام‌سازی ✅");
+  });
 }
+
 function downloadMeta(s){
-  if(!CFG.jbKey||!CFG.jbMetaBin){if(!s)toast("Bin نیست",1);return}
-  fetch("https://api.jsonbin.io/v3/b/"+CFG.jbMetaBin+"/latest",{headers:{"X-Master-Key":CFG.jbKey}})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      if(d.record){
-        if(d.record.visitors){
-          var rv=d.record.visitors;
-          rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
-          // ویزیتورها: مدیر مرجع است → remote جایگزین میشه، ولی رمز local حفظ میشه
-          APP.visitors=rv.map(function(rv){
-            var lv=APP.visitors.find(function(x){return x.name===rv.name});
-            if(lv&&lv.password&&!rv.password)rv.password=lv.password;
-            return rv;
-          });
-        }
-        if(d.record.visits)
-          APP.visits=mergeById(APP.visits,d.record.visits);
-        if(d.record.customers)
-          APP.customers=mergeById(APP.customers,d.record.customers);
-        if(d.record.orders)
-          APP.orders=mergeById(APP.orders,d.record.orders);
-        if(d.record.reminders)
-          APP.reminders=mergeById(APP.reminders,d.record.reminders);
-        saveLocal();
-        renderAll();updateTopUI();
-        // بعد از merge، نسخه کامل رو آپلود کن تا cloud هم sync بشه
-        setTimeout(function(){uploadMeta(true)},600);
-        if(!s)toast("دریافت ✅");
-      }
-    }).catch(function(){if(!s)toast("خطا",1)});
-}
-function uploadProductsJB(s){
-  if(!CFG.jbKey){if(!s)toast("JB نیست",1);return}
-  logSync("آپلود...");
-  fetch("https://api.jsonbin.io/v3/b/"+CFG.jbBin,{
-    method:"PUT",
-    headers:{"Content-Type":"application/json","X-Master-Key":CFG.jbKey},
-    body:JSON.stringify({shopName:CFG.shopName,products:APP.products})
-  }).then(function(r){if(!r.ok)throw 0;logSync("✅");if(!s)toast("آپلود ✅")}).catch(function(){logSync("❌");if(!s)toast("خطا",1)});
-}
-function downloadProductsJB(s){
-  if(!CFG.jbKey){if(!s)toast("JB نیست",1);return}
-  fetch("https://api.jsonbin.io/v3/b/"+CFG.jbBin+"/latest",{headers:{"X-Master-Key":CFG.jbKey}})
-    .then(function(r){return r.json()})
-    .then(function(d){
-      if(d.record&&d.record.products){
-        var remote=d.record.products;
-        // تصاویر local رو نگه میداریم (چون روی imgbb ذخیره‌ن)
-        var localImgMap={};
-        APP.products.forEach(function(p){if(p.images&&p.images.length)localImgMap[p.id]=p.images});
-        // محصولات فقط مدیر تغییر میده → remote کاملاً مرجع است (حذف هم اعمال میشه)
-        APP.products=remote.map(function(p){
-          if(!p.images)p.images=[];
-          if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
-          return p;
+  if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  fbGet("meta",function(d){
+    if(d){
+      if(d.visitors){
+        var rv=d.visitors;
+        rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
+        // ویزیتورها: مدیر مرجع است → remote جایگزین، ولی رمز local حفظ میشه
+        APP.visitors=rv.map(function(r){
+          var lv=APP.visitors.find(function(x){return x.name===r.name});
+          if(lv&&lv.password&&!r.password)r.password=lv.password;
+          return r;
         });
-        saveLocal();renderAll();logSync("✅");
-        if(!s)toast(toPe(APP.products.length)+" کالا");
       }
-    }).catch(function(){logSync("❌");if(!s)toast("خطا",1)});
+      if(d.visits)    APP.visits    = mergeById(APP.visits,   d.visits);
+      if(d.customers) APP.customers = mergeById(APP.customers,d.customers);
+      if(d.orders)    APP.orders    = mergeById(APP.orders,   d.orders);
+      if(d.reminders) APP.reminders = mergeById(APP.reminders,d.reminders);
+      saveLocal();renderAll();updateTopUI();
+      // بعد از merge، نسخه کامل رو آپلود کن تا cloud هم sync بشه
+      setTimeout(function(){uploadMeta(true)},800);
+      if(!s)toast("دریافت ✅");
+    }
+  });
 }
-function logSync(m){$("syncLog").innerHTML="<div>"+m+"</div>"+$("syncLog").innerHTML}
 
-window.addEventListener("online",function(){if(CFG.jbKey){uploadMeta(true);uploadProductsJB(true)}});
+// ══════════════════════════════════════════════════════════════════════════════
+// Real-time listener — هر تغییری در Firebase فوری روی همه گوشی‌ها اعمال میشه
+// از Firebase REST SSE (Server-Sent Events) استفاده میکنیم
+// ══════════════════════════════════════════════════════════════════════════════
+var _fbListeners={};
+function fbListen(path,onChange){
+  if(_fbListeners[path])return; // قبلاً ثبت شده
+  function connect(){
+    var url=CFG.fbDbUrl+"/"+path+".json?auth="+CFG.fbApiKey;
+    var es=new EventSource(url);
+    es.addEventListener("put",function(e){
+      try{
+        var msg=JSON.parse(e.data);
+        if(msg&&msg.data!==null)onChange(msg.data);
+      }catch(err){}
+    });
+    es.addEventListener("patch",function(e){
+      try{
+        var msg=JSON.parse(e.data);
+        if(msg&&msg.data!==null)onChange(msg.data);
+      }catch(err){}
+    });
+    es.onerror=function(){
+      es.close();
+      delete _fbListeners[path];
+      setTimeout(function(){fbListen(path,onChange)},5000); // reconnect بعد از 5 ثانیه
+    };
+    _fbListeners[path]=es;
+  }
+  connect();
+}
 
-// ── sync خودکار هر ۴۵ ثانیه ──────────────────────────────────────────────────
-// محصولات: همه کاربر دریافت میکنن (مدیر مرجعه)
-// meta (مشتری، سفارش، بازدید): merge دو طرفه
-setInterval(function(){
-  if(!navigator.onLine||!CFG.jbKey)return;
-  downloadProductsJB(true);
-  setTimeout(function(){downloadMeta(true)},2000);
-},45000);
+function startFirebaseListeners(){
+  if(!CFG.fbApiKey)return;
+
+  // listener محصولات — وقتی مدیر کالا اضافه/حذف/ویرایش کنه، همه میبینن
+  fbListen("products",function(d){
+    if(!d||!d.products)return;
+    var remote=d.products;
+    var localImgMap={};
+    APP.products.forEach(function(p){if(p.images&&p.images.length)localImgMap[p.id]=p.images});
+    APP.products=remote.map(function(p){
+      if(!p.images)p.images=[];
+      if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
+      return p;
+    });
+    saveLocal();renderAll();logSync("🔴 محصولات بروز شد");
+  });
+
+  // listener meta — وقتی ویزیتور مشتری/سفارش/بازدید ثبت کنه، مدیر فوری میبینه
+  fbListen("meta",function(d){
+    if(!d)return;
+    var changed=false;
+    if(d.visitors){
+      var rv=d.visitors;
+      rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
+      APP.visitors=rv.map(function(r){
+        var lv=APP.visitors.find(function(x){return x.name===r.name});
+        if(lv&&lv.password&&!r.password)r.password=lv.password;
+        return r;
+      });
+      changed=true;
+    }
+    var prevVisits=APP.visits.length;
+    var prevOrders=APP.orders.length;
+    var prevCustomers=APP.customers.length;
+    if(d.visits)    APP.visits    = mergeById(APP.visits,   d.visits);
+    if(d.customers) APP.customers = mergeById(APP.customers,d.customers);
+    if(d.orders)    APP.orders    = mergeById(APP.orders,   d.orders);
+    if(d.reminders) APP.reminders = mergeById(APP.reminders,d.reminders);
+    if(APP.visits.length!==prevVisits||APP.orders.length!==prevOrders||APP.customers.length!==prevCustomers)changed=true;
+    if(changed){saveLocal();renderAll();updateTopUI();logSync("🔴 داده‌ها بروز شد");}
+  });
+}
+
+window.addEventListener("online",function(){
+  if(CFG.fbApiKey){uploadMeta(true);uploadProductsJB(true)}
+  startFirebaseListeners();
+});
 
 // PWA
 window.addEventListener("beforeinstallprompt",function(e){
@@ -2573,7 +2654,12 @@ window.onload=function(){
   var mh="";for(var m=1;m<=12;m++)mh+='<option value="'+m+'">'+toPe(m)+' ماه</option>';
   $("editMonths").innerHTML=mh;
 
-  if(CFG.jbKey){downloadProductsJB(true);setTimeout(function(){downloadMeta(true)},1000)}
+  // Firebase: دریافت اولیه داده‌ها + شروع real-time listeners
+  if(CFG.fbApiKey){
+    downloadProductsJB(true);
+    setTimeout(function(){downloadMeta(true)},1000);
+    setTimeout(startFirebaseListeners,2000);
+  }
 
   if(!APP.isAdmin&&!APP.currentVisitor&&APP.visitors.length>0)setTimeout(showVisitorSelect,500);
   if(APP.currentVisitor&&getTodayReminders().length>0){setTimeout(function(){$("todayBanner").style.display="block";renderToday()},800)}
