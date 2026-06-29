@@ -2840,8 +2840,15 @@ window.addEventListener("online", function(){
 // وقتی tab دوباره visible میشه (کاربر برمیگرده)، داده رو refresh کن
 document.addEventListener("visibilitychange", function(){
   if(document.visibilityState === "visible" && CFG.fbApiKey){
-    downloadProductsJB(true);
-    setTimeout(function(){ downloadMeta(true); }, 800);
+    if(hasPending()){
+      // اول تغییرات ارسال‌نشده رو flush کن — download بعد از flush انجام میشه
+      _blockDownloadUntilFlushed = true;
+      updateSyncBadge(true);
+      flushPendingSync();
+    } else {
+      downloadProductsJB(true);
+      setTimeout(function(){ downloadMeta(true); }, 800);
+    }
     // listener رو هم چک کن
     setTimeout(startFirebaseListeners, 1500);
   }
@@ -2884,6 +2891,8 @@ window.onload=function(){
 
   // ── Firebase: دریافت اولیه + real-time listeners ──────────────────────────
   if(CFG.fbApiKey){
+    // اگه تغییر ارسال‌نشده داریم، بلافاصله block رو فعال کن (قبل از هر download)
+    if(hasPending()) _blockDownloadUntilFlushed = true;
     // بررسی صف ارسال‌نشده از localStorage (مثلاً وقتی VPN قطع بود)
     checkPendingOnStartup();
     // اول داده‌های تازه از Firebase بگیر، بعد localStorage رو override کن
