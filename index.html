@@ -419,6 +419,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       <div class="badge badge-dark" id="dateView"></div>
       <div class="badge badge-blue" id="countView">۰ کالا</div>
       <div class="badge badge-orange" id="currentVisitorBadge" style="display:none" onclick="changeVisitor()">👤 <span id="currentVisitorName">-</span></div>
+      <span id="syncPendingBadge" title="تغییرات ارسال نشده — در انتظار VPN" onclick="flushPendingSync()" style="display:none;background:#dc2626;color:#fff;padding:4px 9px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;animation:bellPulse 1.5s infinite">⏳ صف</span>
       <button class="bell-btn" id="bellBtn" onclick="toggleTodayPanel()">🔔<span class="bell-badge hide" id="bellBadge">۰</span></button>
       <button class="user-status visitor" id="userStatus"><span id="userStatusIcon">👤</span><span id="userStatusText">ویزیتور</span></button>
     </div>
@@ -1159,7 +1160,21 @@ function autoCloudSync(){
   if(!CFG.fbApiKey)return;
   clearTimeout(APP.cloudSyncTimer);
   APP.cloudSyncTimer=setTimeout(function(){
-    if(!navigator.onLine)return;
+    if(!navigator.onLine){
+      // آفلاینه — فقط pending علامت بزن
+      _pendingSync.products=true;
+      _pendingSync.meta=true;
+      updateSyncBadge(true);
+      return;
+    }
+    if(!_fbReachable){
+      // Firebase در دسترس نیست (VPN قطعه) — صف کن
+      _pendingSync.products=true;
+      _pendingSync.meta=true;
+      updateSyncBadge(true);
+      scheduleSyncRetry();
+      return;
+    }
     uploadMeta(true);
     uploadProductsJB(true);
   },1500);
@@ -2453,28 +2468,105 @@ function mergeById(localArr,remoteArr){
   return result;
 }
 
-// ── Firebase REST helper ──────────────────────────────────────────────────────
-function fbUrl(path){
-  return CFG.fbDbUrl+"/"+path+".json?auth="+CFG.fbApiKey;
-}
-function fbGet(path,cb){
-  fetch(fbUrl(path)).then(function(r){return r.json()}).then(cb).catch(function(e){console.error("fbGet",e)});
-}
-function fbSet(path,data,cb){
-  fetch(fbUrl(path),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-    .then(function(r){if(!r.ok)throw 0;if(cb)cb()})
-    .catch(function(e){console.error("fbSet",e)});
-}
-function fbPatch(path,data,cb){
-  fetch(fbUrl(path),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
-    .then(function(r){if(!r.ok)throw 0;if(cb)cb()})
-    .catch(function(e){console.error("fbPatch",e)});
-}
+// ══════════════════════════════════════════════════════════════════════════════
+// OFFLINE QUEUE — وقتی VPN قطعه، تغییرات صف میشن و بعد از وصل شدن ارسال میشن
+// ══════════════════════════════════════════════════════════════════════════════
+var _pendingSync = {products: false, meta: false};
+var _syncRetryTimer = null;
+var _fbReachable = true; // آخرین وضعیت دسترسی به Firebase
 
-// ── لاگ sync ─────────────────────────────────────────────────────────────────
 function logSync(m){
   var el=$("syncLog");
   if(el)el.innerHTML="<div>"+m+"</div>"+el.innerHTML;
+}
+
+// ── Firebase REST helper با retry خودکار ──────────────────────────────────────
+function fbUrl(path){
+  return CFG.fbDbUrl+"/"+path+".json?auth="+CFG.fbApiKey;
+}
+
+function fbGet(path,cb){
+  fetch(fbUrl(path))
+    .then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json();
+    })
+    .then(function(d){ _fbReachable=true; cb(d); })
+    .catch(function(e){
+      _fbReachable=false;
+      console.warn("fbGet failed:",e);
+      scheduleSyncRetry();
+    });
+}
+
+function fbSet(path,data,cb){
+  fetch(fbUrl(path),{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
+  })
+    .then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      _fbReachable=true;
+      updateSyncBadge(false);
+      if(cb) cb();
+    })
+    .catch(function(e){
+      _fbReachable=false;
+      console.warn("fbSet failed ("+path+"):",e);
+      // علامت‌گذاری که این path باید retry بشه
+      if(path==="products") _pendingSync.products=true;
+      if(path==="meta")     _pendingSync.meta=true;
+      updateSyncBadge(true);
+      scheduleSyncRetry();
+    });
+}
+
+// ── نشانگر "ارسال نشده" ────────────────────────────────────────────────────────
+function updateSyncBadge(pending){
+  var el=$("syncPendingBadge");
+  if(!el) return;
+  el.style.display = pending ? "inline-flex" : "none";
+}
+
+// ── retry خودکار هر ۱۵ ثانیه تا زمانی که pending داریم ─────────────────────
+function scheduleSyncRetry(){
+  if(_syncRetryTimer) return; // قبلاً schedule شده
+  _syncRetryTimer = setInterval(function(){
+    if(!navigator.onLine){
+      logSync("⏳ آفلاین — صبر...");
+      return;
+    }
+    // تست سریع که Firebase در دسترسه
+    fetch(CFG.fbDbUrl+"/.json?auth="+CFG.fbApiKey+"&shallow=true&timeout=5000")
+      .then(function(r){
+        if(!r.ok) throw 0;
+        _fbReachable=true;
+        flushPendingSync();
+      })
+      .catch(function(){
+        _fbReachable=false;
+        logSync("🔴 VPN قطعه — retry...");
+        updateSyncBadge(true);
+      });
+  }, 15000);
+}
+
+function flushPendingSync(){
+  if(!_pendingSync.products && !_pendingSync.meta){
+    // هیچی pending نیست — timer رو خاموش کن
+    if(_syncRetryTimer){ clearInterval(_syncRetryTimer); _syncRetryTimer=null; }
+    return;
+  }
+  logSync("🔄 ارسال صف...");
+  if(_pendingSync.products){
+    _pendingSync.products=false;
+    uploadProductsJB(true);
+  }
+  if(_pendingSync.meta){
+    _pendingSync.meta=false;
+    uploadMeta(true);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2652,13 +2744,28 @@ function startFirebaseListeners(){
   fbListen("meta",     applyRemoteMeta);
 }
 
-// وقتی اینترنت برگشت، sync کن و listener رو چک کن
+// وقتی اینترنت برگشت، صف رو flush کن و listener رو چک کن
 window.addEventListener("online", function(){
   if(!CFG.fbApiKey) return;
-  uploadMeta(true);
-  uploadProductsJB(true);
-  // اگه listener قطع شده بود، دوباره وصل کن
-  setTimeout(startFirebaseListeners, 1000);
+  logSync("🌐 اینترنت وصل شد");
+  // تست Firebase — اگه VPN هم وصل باشه، flush کن
+  setTimeout(function(){
+    fetch(CFG.fbDbUrl+"/.json?auth="+CFG.fbApiKey+"&shallow=true")
+      .then(function(r){
+        if(!r.ok) throw 0;
+        _fbReachable=true;
+        _pendingSync.products=true;
+        _pendingSync.meta=true;
+        flushPendingSync();
+        setTimeout(startFirebaseListeners, 500);
+      })
+      .catch(function(){
+        _fbReachable=false;
+        logSync("🔴 اینترنت وصله ولی Firebase در دسترس نیست (VPN؟)");
+        updateSyncBadge(true);
+        scheduleSyncRetry();
+      });
+  }, 1000);
 });
 
 // وقتی tab دوباره visible میشه (کاربر برمیگرده)، داده رو refresh کن
