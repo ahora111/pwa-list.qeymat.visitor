@@ -2580,21 +2580,36 @@ function scheduleSyncRetry(){
 function flushPendingSync(){
   if(!hasPending()){
     if(_syncRetryTimer){ clearInterval(_syncRetryTimer); _syncRetryTimer=null; }
+    _blockDownloadUntilFlushed = false;
     updateSyncBadge(false);
     return;
   }
   logSync("🔄 ارسال صف...");
   var p = getPendingSync();
-  if(p.products) uploadProductsJB(true);
-  if(p.meta)     uploadMeta(true);
+  // بعد از ارسال موفق: block رو بردار و download کن تا sync کامل بشه
+  var afterFlush = function(){
+    if(!hasPending()){
+      _blockDownloadUntilFlushed = false;
+      logSync("✅ صف ارسال شد — دریافت داده‌های جدید...");
+      // حالا download کن تا داده‌های دیگران هم بیاد
+      downloadProductsJB(true);
+      setTimeout(function(){ downloadMeta(true); }, 800);
+    }
+  };
+  if(p.products) uploadProductsJB(true, afterFlush);
+  if(p.meta)     uploadMeta(true, afterFlush);
 }
 
 // ── بررسی صف موقع باز شدن برنامه ─────────────────────────────────────────────
+// مهم: تا زمانی که صف ارسال نشده، download از Firebase انجام نمیشه
+// چون download داده local (که ارسال نشده) رو پاک میکنه
+var _blockDownloadUntilFlushed = false;
+
 function checkPendingOnStartup(){
   if(!hasPending()) return;
+  _blockDownloadUntilFlushed = true; // بلاک download
   updateSyncBadge(true);
-  logSync("⏳ تغییرات ارسال‌نشده موجوده...");
-  // بعد از ۳ ثانیه (که Firebase وصل شده باشه) سعی کن ارسال کنی
+  logSync("⏳ تغییرات ارسال‌نشده موجوده — download بلاک شد تا ارسال بشه");
   setTimeout(function(){
     fetch(CFG.fbDbUrl+"/.json?auth="+CFG.fbApiKey+"&shallow=true")
       .then(function(r){
@@ -2604,33 +2619,38 @@ function checkPendingOnStartup(){
       })
       .catch(function(){
         _fbReachable=false;
-        logSync("🔴 VPN هنوز قطعه — retry هر ۱۵ ثانیه");
+        logSync("🔴 VPN قطعه — retry هر ۱۵ ثانیه (download بلاک)");
         scheduleSyncRetry();
       });
-  }, 3000);
+  }, 2000);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // محصولات — فقط مدیر تغییر میده → remote همیشه مرجعه
 // ══════════════════════════════════════════════════════════════════════════════
-function uploadProductsJB(s){
+function uploadProductsJB(s,doneCb){
   if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
   logSync("آپلود محصولات...");
   var data={shopName:CFG.shopName,products:APP.products,updatedAt:Date.now()};
   fbSet("products",data,function(){
     logSync("✅ محصولات آپلود شد");
     if(!s)toast("محصولات آپلود شد ✅");
+    if(doneCb) doneCb();
   });
 }
 
 function downloadProductsJB(s){
   if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  // اگه صف ارسال‌نشده داریم، download نکن — داده local رو پاک نکن
+  if(_blockDownloadUntilFlushed){
+    logSync("⏳ download بلاک — صف هنوز ارسال نشده");
+    return;
+  }
   fbGet("products",function(d){
     if(d&&d.products){
       var remote=d.products;
       var localImgMap={};
       APP.products.forEach(function(p){if(p.images&&p.images.length)localImgMap[p.id]=p.images});
-      // محصولات فقط مدیر تغییر میده → remote کاملاً جایگزین local میشه
       APP.products=remote.map(function(p){
         if(!p.images)p.images=[];
         if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
@@ -2646,7 +2666,7 @@ function downloadProductsJB(s){
 // Meta (ویزیتور، مشتری، سفارش، بازدید، یادآور)
 // هر کاربر تغییر میده → merge دو طرفه، جدیدتر برنده
 // ══════════════════════════════════════════════════════════════════════════════
-function uploadMeta(s){
+function uploadMeta(s,doneCb){
   if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
   var data={
     visitors:APP.visitors,
@@ -2658,11 +2678,17 @@ function uploadMeta(s){
   };
   fbSet("meta",data,function(){
     if(!s)toast("همگام‌سازی ✅");
+    if(doneCb) doneCb();
   });
 }
 
 function downloadMeta(s){
   if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  // اگه صف ارسال‌نشده داریم، download نکن — داده local رو پاک نکن
+  if(_blockDownloadUntilFlushed){
+    logSync("⏳ download بلاک — صف هنوز ارسال نشده");
+    return;
+  }
   fbGet("meta",function(d){
     if(d){
       if(d.visitors){
@@ -2746,6 +2772,8 @@ function fbListen(path, onChange){
 
 function applyRemoteProducts(d){
   if(!d || !d.products) return;
+  // اگه صف ارسال‌نشده داریم، listener هم نباید داده local رو overwrite کنه
+  if(_blockDownloadUntilFlushed) return;
   var remote = d.products;
   var localImgMap = {};
   APP.products.forEach(function(p){ if(p.images && p.images.length) localImgMap[p.id] = p.images; });
@@ -2759,6 +2787,7 @@ function applyRemoteProducts(d){
 
 function applyRemoteMeta(d){
   if(!d) return;
+  if(_blockDownloadUntilFlushed) return;
   var changed = false;
   if(d.visitors){
     var rv = d.visitors;
