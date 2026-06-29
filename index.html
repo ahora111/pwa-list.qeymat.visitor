@@ -1161,17 +1161,13 @@ function autoCloudSync(){
   clearTimeout(APP.cloudSyncTimer);
   APP.cloudSyncTimer=setTimeout(function(){
     if(!navigator.onLine){
-      // آفلاینه — فقط pending علامت بزن
-      _pendingSync.products=true;
-      _pendingSync.meta=true;
-      updateSyncBadge(true);
+      markPending("products");
+      markPending("meta");
       return;
     }
     if(!_fbReachable){
-      // Firebase در دسترس نیست (VPN قطعه) — صف کن
-      _pendingSync.products=true;
-      _pendingSync.meta=true;
-      updateSyncBadge(true);
+      markPending("products");
+      markPending("meta");
       scheduleSyncRetry();
       return;
     }
@@ -2469,11 +2465,38 @@ function mergeById(localArr,remoteArr){
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// OFFLINE QUEUE — وقتی VPN قطعه، تغییرات صف میشن و بعد از وصل شدن ارسال میشن
+// OFFLINE QUEUE — تغییرات در localStorage ذخیره میشن، بعد از VPN ارسال میشن
 // ══════════════════════════════════════════════════════════════════════════════
-var _pendingSync = {products: false, meta: false};
+
 var _syncRetryTimer = null;
-var _fbReachable = true; // آخرین وضعیت دسترسی به Firebase
+var _fbReachable = true;
+
+// ── خواندن و نوشتن صف از localStorage ────────────────────────────────────────
+function getPendingSync(){
+  try{
+    var raw = localStorage.getItem("mp_pending_sync");
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {products:false, meta:false};
+}
+function setPendingSync(obj){
+  try{ localStorage.setItem("mp_pending_sync", JSON.stringify(obj)); }catch(e){}
+}
+function markPending(path){
+  var p = getPendingSync();
+  if(path==="products") p.products = true;
+  if(path==="meta")     p.meta     = true;
+  setPendingSync(p);
+  updateSyncBadge(true);
+}
+function clearPending(){
+  setPendingSync({products:false, meta:false});
+  updateSyncBadge(false);
+}
+function hasPending(){
+  var p = getPendingSync();
+  return p.products || p.meta;
+}
 
 function logSync(m){
   var el=$("syncLog");
@@ -2508,16 +2531,19 @@ function fbSet(path,data,cb){
     .then(function(r){
       if(!r.ok) throw new Error("HTTP "+r.status);
       _fbReachable=true;
-      updateSyncBadge(false);
+      // این path ارسال شد — از صف پاک کن
+      var p = getPendingSync();
+      if(path==="products") p.products=false;
+      if(path==="meta")     p.meta=false;
+      setPendingSync(p);
+      if(!hasPending()) updateSyncBadge(false);
       if(cb) cb();
     })
     .catch(function(e){
       _fbReachable=false;
       console.warn("fbSet failed ("+path+"):",e);
-      // علامت‌گذاری که این path باید retry بشه
-      if(path==="products") _pendingSync.products=true;
-      if(path==="meta")     _pendingSync.meta=true;
-      updateSyncBadge(true);
+      // در localStorage ذخیره کن — بعد از بستن مرورگر هم باقیه
+      markPending(path);
       scheduleSyncRetry();
     });
 }
@@ -2531,14 +2557,13 @@ function updateSyncBadge(pending){
 
 // ── retry خودکار هر ۱۵ ثانیه تا زمانی که pending داریم ─────────────────────
 function scheduleSyncRetry(){
-  if(_syncRetryTimer) return; // قبلاً schedule شده
+  if(_syncRetryTimer) return;
   _syncRetryTimer = setInterval(function(){
     if(!navigator.onLine){
       logSync("⏳ آفلاین — صبر...");
       return;
     }
-    // تست سریع که Firebase در دسترسه
-    fetch(CFG.fbDbUrl+"/.json?auth="+CFG.fbApiKey+"&shallow=true&timeout=5000")
+    fetch(CFG.fbDbUrl+"/.json?auth="+CFG.fbApiKey+"&shallow=true")
       .then(function(r){
         if(!r.ok) throw 0;
         _fbReachable=true;
@@ -2553,20 +2578,36 @@ function scheduleSyncRetry(){
 }
 
 function flushPendingSync(){
-  if(!_pendingSync.products && !_pendingSync.meta){
-    // هیچی pending نیست — timer رو خاموش کن
+  if(!hasPending()){
     if(_syncRetryTimer){ clearInterval(_syncRetryTimer); _syncRetryTimer=null; }
+    updateSyncBadge(false);
     return;
   }
   logSync("🔄 ارسال صف...");
-  if(_pendingSync.products){
-    _pendingSync.products=false;
-    uploadProductsJB(true);
-  }
-  if(_pendingSync.meta){
-    _pendingSync.meta=false;
-    uploadMeta(true);
-  }
+  var p = getPendingSync();
+  if(p.products) uploadProductsJB(true);
+  if(p.meta)     uploadMeta(true);
+}
+
+// ── بررسی صف موقع باز شدن برنامه ─────────────────────────────────────────────
+function checkPendingOnStartup(){
+  if(!hasPending()) return;
+  updateSyncBadge(true);
+  logSync("⏳ تغییرات ارسال‌نشده موجوده...");
+  // بعد از ۳ ثانیه (که Firebase وصل شده باشه) سعی کن ارسال کنی
+  setTimeout(function(){
+    fetch(CFG.fbDbUrl+"/.json?auth="+CFG.fbApiKey+"&shallow=true")
+      .then(function(r){
+        if(!r.ok) throw 0;
+        _fbReachable=true;
+        flushPendingSync();
+      })
+      .catch(function(){
+        _fbReachable=false;
+        logSync("🔴 VPN هنوز قطعه — retry هر ۱۵ ثانیه");
+        scheduleSyncRetry();
+      });
+  }, 3000);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2754,8 +2795,7 @@ window.addEventListener("online", function(){
       .then(function(r){
         if(!r.ok) throw 0;
         _fbReachable=true;
-        _pendingSync.products=true;
-        _pendingSync.meta=true;
+        // Firebase وصله — هر pending موجودی رو flush کن
         flushPendingSync();
         setTimeout(startFirebaseListeners, 500);
       })
@@ -2815,6 +2855,8 @@ window.onload=function(){
 
   // ── Firebase: دریافت اولیه + real-time listeners ──────────────────────────
   if(CFG.fbApiKey){
+    // بررسی صف ارسال‌نشده از localStorage (مثلاً وقتی VPN قطع بود)
+    checkPendingOnStartup();
     // اول داده‌های تازه از Firebase بگیر، بعد localStorage رو override کن
     downloadProductsJB(true);
     setTimeout(function(){downloadMeta(true);}, 1200);
