@@ -2558,80 +2558,117 @@ function downloadMeta(s){
 // Real-time listener — هر تغییری در Firebase فوری روی همه گوشی‌ها اعمال میشه
 // از Firebase REST SSE (Server-Sent Events) استفاده میکنیم
 // ══════════════════════════════════════════════════════════════════════════════
+// ── Firebase real-time listeners ──────────────────────────────────────────────
+// از EventSource (SSE) استفاده میکنیم — هیچ SDK نیاز نیست
 var _fbListeners={};
-function fbListen(path,onChange){
-  if(_fbListeners[path])return; // قبلاً ثبت شده
+var _fbOnChange={};
+
+function fbListen(path, onChange){
+  _fbOnChange[path]=onChange; // همیشه آخرین callback رو نگه دار
+
+  // اگه قبلاً وصل بود و زنده‌ست، فقط callback رو آپدیت کن
+  if(_fbListeners[path] && _fbListeners[path].readyState !== 2) return;
+
   function connect(){
-    var url=CFG.fbDbUrl+"/"+path+".json?auth="+CFG.fbApiKey;
-    var es=new EventSource(url);
-    es.addEventListener("put",function(e){
+    // قبل از connect، اگه قبلی باز بود ببند
+    if(_fbListeners[path]){
+      try{_fbListeners[path].close();}catch(e){}
+    }
+
+    var url = CFG.fbDbUrl + "/" + path + ".json?auth=" + CFG.fbApiKey;
+    var es  = new EventSource(url);
+
+    es.addEventListener("put", function(e){
       try{
-        var msg=JSON.parse(e.data);
-        if(msg&&msg.data!==null)onChange(msg.data);
-      }catch(err){}
+        var msg = JSON.parse(e.data);
+        // put با path="/" یعنی کل داده — msg.data خود داده‌ست
+        if(msg && msg.data !== null && msg.data !== undefined){
+          _fbOnChange[path](msg.data);
+        }
+      }catch(err){ console.warn("fbListen put parse error", err); }
     });
-    es.addEventListener("patch",function(e){
+
+    es.addEventListener("patch", function(e){
       try{
-        var msg=JSON.parse(e.data);
-        if(msg&&msg.data!==null)onChange(msg.data);
-      }catch(err){}
+        var msg = JSON.parse(e.data);
+        if(msg && msg.data !== null && msg.data !== undefined){
+          _fbOnChange[path](msg.data);
+        }
+      }catch(err){ console.warn("fbListen patch parse error", err); }
     });
-    es.onerror=function(){
+
+    es.onerror = function(){
+      console.warn("Firebase SSE error on", path, "— reconnect in 6s");
       es.close();
       delete _fbListeners[path];
-      setTimeout(function(){fbListen(path,onChange)},5000); // reconnect بعد از 5 ثانیه
+      setTimeout(function(){ connect(); }, 6000);
     };
-    _fbListeners[path]=es;
+
+    _fbListeners[path] = es;
+    logSync("🔗 listener: " + path);
   }
+
   connect();
 }
 
-function startFirebaseListeners(){
-  if(!CFG.fbApiKey)return;
-
-  // listener محصولات — وقتی مدیر کالا اضافه/حذف/ویرایش کنه، همه میبینن
-  fbListen("products",function(d){
-    if(!d||!d.products)return;
-    var remote=d.products;
-    var localImgMap={};
-    APP.products.forEach(function(p){if(p.images&&p.images.length)localImgMap[p.id]=p.images});
-    APP.products=remote.map(function(p){
-      if(!p.images)p.images=[];
-      if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
-      return p;
-    });
-    saveLocal();renderAll();logSync("🔴 محصولات بروز شد");
+function applyRemoteProducts(d){
+  if(!d || !d.products) return;
+  var remote = d.products;
+  var localImgMap = {};
+  APP.products.forEach(function(p){ if(p.images && p.images.length) localImgMap[p.id] = p.images; });
+  APP.products = remote.map(function(p){
+    if(!p.images) p.images = [];
+    if(localImgMap[p.id] && localImgMap[p.id].length > p.images.length) p.images = localImgMap[p.id];
+    return p;
   });
-
-  // listener meta — وقتی ویزیتور مشتری/سفارش/بازدید ثبت کنه، مدیر فوری میبینه
-  fbListen("meta",function(d){
-    if(!d)return;
-    var changed=false;
-    if(d.visitors){
-      var rv=d.visitors;
-      rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
-      APP.visitors=rv.map(function(r){
-        var lv=APP.visitors.find(function(x){return x.name===r.name});
-        if(lv&&lv.password&&!r.password)r.password=lv.password;
-        return r;
-      });
-      changed=true;
-    }
-    var prevVisits=APP.visits.length;
-    var prevOrders=APP.orders.length;
-    var prevCustomers=APP.customers.length;
-    if(d.visits)    APP.visits    = mergeById(APP.visits,   d.visits);
-    if(d.customers) APP.customers = mergeById(APP.customers,d.customers);
-    if(d.orders)    APP.orders    = mergeById(APP.orders,   d.orders);
-    if(d.reminders) APP.reminders = mergeById(APP.reminders,d.reminders);
-    if(APP.visits.length!==prevVisits||APP.orders.length!==prevOrders||APP.customers.length!==prevCustomers)changed=true;
-    if(changed){saveLocal();renderAll();updateTopUI();logSync("🔴 داده‌ها بروز شد");}
-  });
+  saveLocal(); renderAll(); logSync("✅ محصولات بروز شد");
 }
 
-window.addEventListener("online",function(){
-  if(CFG.fbApiKey){uploadMeta(true);uploadProductsJB(true)}
-  startFirebaseListeners();
+function applyRemoteMeta(d){
+  if(!d) return;
+  var changed = false;
+  if(d.visitors){
+    var rv = d.visitors;
+    rv.forEach(function(v,i){ if(typeof v==="string") rv[i]={name:v,password:""}; });
+    APP.visitors = rv.map(function(r){
+      var lv = APP.visitors.find(function(x){ return x.name===r.name; });
+      if(lv && lv.password && !r.password) r.password = lv.password;
+      return r;
+    });
+    changed = true;
+  }
+  var pv=APP.visits.length, po=APP.orders.length, pc=APP.customers.length;
+  if(d.visits)    APP.visits    = mergeById(APP.visits,    d.visits);
+  if(d.customers) APP.customers = mergeById(APP.customers, d.customers);
+  if(d.orders)    APP.orders    = mergeById(APP.orders,    d.orders);
+  if(d.reminders) APP.reminders = mergeById(APP.reminders, d.reminders);
+  if(APP.visits.length!==pv || APP.orders.length!==po || APP.customers.length!==pc) changed=true;
+  if(changed){ saveLocal(); renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد"); }
+}
+
+function startFirebaseListeners(){
+  if(!CFG.fbApiKey) return;
+  fbListen("products", applyRemoteProducts);
+  fbListen("meta",     applyRemoteMeta);
+}
+
+// وقتی اینترنت برگشت، sync کن و listener رو چک کن
+window.addEventListener("online", function(){
+  if(!CFG.fbApiKey) return;
+  uploadMeta(true);
+  uploadProductsJB(true);
+  // اگه listener قطع شده بود، دوباره وصل کن
+  setTimeout(startFirebaseListeners, 1000);
+});
+
+// وقتی tab دوباره visible میشه (کاربر برمیگرده)، داده رو refresh کن
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible" && CFG.fbApiKey){
+    downloadProductsJB(true);
+    setTimeout(function(){ downloadMeta(true); }, 800);
+    // listener رو هم چک کن
+    setTimeout(startFirebaseListeners, 1500);
+  }
 });
 
 // PWA
@@ -2641,7 +2678,22 @@ window.addEventListener("beforeinstallprompt",function(e){
   if(!localStorage.getItem("mp_install_dismissed"))$("installBanner").classList.add("show");
 });
 if("serviceWorker" in navigator){
-  window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      // چک کن آپدیت هست
+      reg.addEventListener("updatefound", function(){
+        var newWorker = reg.installing;
+        newWorker.addEventListener("statechange", function(){
+          if(newWorker.state === "installed" && navigator.serviceWorker.controller){
+            // نسخه جدید آماده‌ست — صفحه رو reload کن
+            window.location.reload();
+          }
+        });
+      });
+      // هر ۵ دقیقه یه بار چک کن آپدیت هست
+      setInterval(function(){ reg.update(); }, 5 * 60 * 1000);
+    }).catch(function(){});
+  });
 }
 
 // INIT
@@ -2654,11 +2706,20 @@ window.onload=function(){
   var mh="";for(var m=1;m<=12;m++)mh+='<option value="'+m+'">'+toPe(m)+' ماه</option>';
   $("editMonths").innerHTML=mh;
 
-  // Firebase: دریافت اولیه داده‌ها + شروع real-time listeners
+  // ── Firebase: دریافت اولیه + real-time listeners ──────────────────────────
   if(CFG.fbApiKey){
+    // اول داده‌های تازه از Firebase بگیر، بعد localStorage رو override کن
     downloadProductsJB(true);
-    setTimeout(function(){downloadMeta(true)},1000);
-    setTimeout(startFirebaseListeners,2000);
+    setTimeout(function(){downloadMeta(true);}, 1200);
+    // listeners رو بعد از دریافت اولیه شروع کن
+    setTimeout(startFirebaseListeners, 2500);
+  }
+
+  // ── Service Worker آپدیت: اگه نسخه جدید آماده بود، صفحه رو reload کن ──────
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.addEventListener("controllerchange", function(){
+      window.location.reload();
+    });
   }
 
   if(!APP.isAdmin&&!APP.currentVisitor&&APP.visitors.length>0)setTimeout(showVisitorSelect,500);
