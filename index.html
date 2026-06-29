@@ -1,4 +1,6 @@
-<html lang="fa" dir="rtl"><head>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <meta name="theme-color" content="#f0f4ff">
@@ -409,14 +411,14 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     <div class="logo">
       <div class="logo-icon">💰</div>
       <div>
-        <h1 id="shopNameView">پخش موبایل اهورا</h1>
+        <h1 id="shopNameView">اهورا</h1>
         <small>پخش موبایل</small>
       </div>
     </div>
     <div class="header-right">
-      <div class="badge badge-dark" id="dateView">۱۴۰۵/۰۴/۰۸</div>
-      <div class="badge badge-blue" id="countView">۲ کالا</div>
-      <div class="badge badge-orange" id="currentVisitorBadge" style="" onclick="changeVisitor()">👤 <span id="currentVisitorName">شیرازیان</span></div>
+      <div class="badge badge-dark" id="dateView"></div>
+      <div class="badge badge-blue" id="countView">۰ کالا</div>
+      <div class="badge badge-orange" id="currentVisitorBadge" style="display:none" onclick="changeVisitor()">👤 <span id="currentVisitorName">-</span></div>
       <button class="bell-btn" id="bellBtn" onclick="toggleTodayPanel()">🔔<span class="bell-badge hide" id="bellBadge">۰</span></button>
       <button class="user-status visitor" id="userStatus"><span id="userStatusIcon">👤</span><span id="userStatusText">ویزیتور</span></button>
     </div>
@@ -506,12 +508,12 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
                 <th style="width:80px">عملیات</th>
               </tr>
             </thead>
-            <tbody id="adminBody"><tr><td><input type="checkbox" class="product-check" onchange="toggleSelect(1782676949526,this.checked)"></td><td class="row-num">۱</td><td class="p-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></td><td><input class="edit-input" type="text" inputmode="numeric" value="۲۰۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'cashPrice',this.value)" onblur="updateField(1782676949526,'cashPrice',this.value)"></td><td><input class="edit-input" type="text" inputmode="numeric" value="۲۱۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'checkPrice',this.value)" onblur="updateField(1782676949526,'checkPrice',this.value)"></td><td><select class="edit-input" onchange="updateField(1782676949526,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9" selected="">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></td><td><button class="icon-btn" onclick="openEditProduct(1782676949526)">✏️</button><button class="icon-btn" onclick="deleteProduct(1782676949526)">🗑️</button></td></tr><tr><td><input type="checkbox" class="product-check" onchange="toggleSelect(1782676956862,this.checked)"></td><td class="row-num">۲</td><td class="p-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></td><td><input class="edit-input" type="text" inputmode="numeric" value="۱۰۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'cashPrice',this.value)" onblur="updateField(1782676956862,'cashPrice',this.value)"></td><td><input class="edit-input" type="text" inputmode="numeric" value="۱۲۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'checkPrice',this.value)" onblur="updateField(1782676956862,'checkPrice',this.value)"></td><td><select class="edit-input" onchange="updateField(1782676956862,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3" selected="">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></td><td><button class="icon-btn" onclick="openEditProduct(1782676956862)">✏️</button><button class="icon-btn" onclick="deleteProduct(1782676956862)">🗑️</button></td></tr></tbody>
+            <tbody id="adminBody"></tbody>
           </table>
         </div>
-        <div class="mobile-cards" id="adminMobileCards"><div class="mobile-admin-card"><div class="mac-top"><input type="checkbox" class="product-check mac-check" onchange="toggleSelect(1782676949526,this.checked)"><div style="flex:1"><div class="mac-num">#۱</div><div class="mac-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></div></div></div><div class="mac-fields"><div><div class="mac-field-label">💵 نقدی</div><input class="edit-input" type="text" inputmode="numeric" value="۲۰۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'cashPrice',this.value)" onblur="updateField(1782676949526,'cashPrice',this.value)"></div><div><div class="mac-field-label">📝 چکی</div><input class="edit-input" type="text" inputmode="numeric" value="۲۱۰" oninput="formatThis(this)" onchange="updateField(1782676949526,'checkPrice',this.value)" onblur="updateField(1782676949526,'checkPrice',this.value)"></div><div class="mac-field-full"><div class="mac-field-label">📅 ماه</div><select class="edit-input" onchange="updateField(1782676949526,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9" selected="">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></div></div><div class="mac-actions"><button class="btn btn-blue btn-sm" onclick="openEditProduct(1782676949526)">✏️</button><button class="btn btn-red btn-sm" onclick="deleteProduct(1782676949526)">🗑️</button></div></div><div class="mobile-admin-card"><div class="mac-top"><input type="checkbox" class="product-check mac-check" onchange="toggleSelect(1782676956862,this.checked)"><div style="flex:1"><div class="mac-num">#۲</div><div class="mac-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></div></div></div><div class="mac-fields"><div><div class="mac-field-label">💵 نقدی</div><input class="edit-input" type="text" inputmode="numeric" value="۱۰۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'cashPrice',this.value)" onblur="updateField(1782676956862,'cashPrice',this.value)"></div><div><div class="mac-field-label">📝 چکی</div><input class="edit-input" type="text" inputmode="numeric" value="۱۲۰" oninput="formatThis(this)" onchange="updateField(1782676956862,'checkPrice',this.value)" onblur="updateField(1782676956862,'checkPrice',this.value)"></div><div class="mac-field-full"><div class="mac-field-label">📅 ماه</div><select class="edit-input" onchange="updateField(1782676956862,'maxMonths',this.value)"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3" selected="">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></div></div><div class="mac-actions"><button class="btn btn-blue btn-sm" onclick="openEditProduct(1782676956862)">✏️</button><button class="btn btn-red btn-sm" onclick="deleteProduct(1782676956862)">🗑️</button></div></div></div>
-        <div class="empty-state" id="adminEmpty" style="display: none;"><div class="big">📦</div><div>کالایی نیست</div></div>
-        <div class="sync-log" id="syncLog"><div>✅</div><div>آپلود...</div><div>✅</div><div>آپلود...</div><div>✅</div>آماده...</div>
+        <div class="mobile-cards" id="adminMobileCards"></div>
+        <div class="empty-state" id="adminEmpty"><div class="big">📦</div><div>کالایی نیست</div></div>
+        <div class="sync-log" id="syncLog">آماده...</div>
       </div>
     </div>
 
@@ -608,7 +610,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
 
   <!-- PRODUCTS -->
   <div id="secProducts">
-    <div class="print-header"><h1 id="printShopName">پخش موبایل اهورا</h1><p>لیست قیمت</p></div>
+    <div class="print-header"><h1 id="printShopName">اهورا</h1><p>لیست قیمت</p></div>
     <div class="search-box no-print">
       <span>🔍</span>
       <input type="text" id="searchInput" placeholder="جستجو...">
@@ -627,11 +629,11 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
               <th style="width:45px">🛒</th>
             </tr>
           </thead>
-          <tbody id="visitorBody"><tr><td class="row-num">۱</td><td class="p-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></td><td class="price-cash">۲۰۰ <span class="toman">ت</span></td><td class="price-check">۲۱۰ <span class="toman">ت</span></td><td class="price-months">۹ ماه</td><td><button class="add-cart-btn" onclick="addToCart(1782676949526)">➕</button></td></tr><tr><td class="row-num">۲</td><td class="p-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></td><td class="price-cash">۱۰۰ <span class="toman">ت</span></td><td class="price-check">۱۲۰ <span class="toman">ت</span></td><td class="price-months">۳ ماه</td><td><button class="add-cart-btn" onclick="addToCart(1782676956862)">➕</button></td></tr></tbody>
+          <tbody id="visitorBody"></tbody>
         </table>
       </div>
-      <div class="mobile-cards" id="visitorMobileCards"><div class="mobile-card"><div class="mc-header"><span class="mc-num">۱</span><div class="mc-name">گلس ۱<button class="cam-trigger" onclick="openGallery(1782676949526)">📷</button></div><button class="add-cart-btn" onclick="addToCart(1782676949526)" style="flex-shrink:0">➕</button></div><div class="mc-prices"><div class="mc-price-item"><div class="mc-price-label">💵 نقدی</div><div class="mc-price-value price-cash">۲۰۰ <span class="toman">ت</span></div></div><div class="mc-price-item"><div class="mc-price-label">📝 چکی</div><div class="mc-price-value price-check">۲۱۰ <span class="toman">ت</span></div></div></div><div class="mc-bottom"><span class="mc-months">📅 ۹ ماه</span></div></div><div class="mobile-card"><div class="mc-header"><span class="mc-num">۲</span><div class="mc-name">گلس ۲<button class="cam-trigger" onclick="openGallery(1782676956862)">📷</button></div><button class="add-cart-btn" onclick="addToCart(1782676956862)" style="flex-shrink:0">➕</button></div><div class="mc-prices"><div class="mc-price-item"><div class="mc-price-label">💵 نقدی</div><div class="mc-price-value price-cash">۱۰۰ <span class="toman">ت</span></div></div><div class="mc-price-item"><div class="mc-price-label">📝 چکی</div><div class="mc-price-value price-check">۱۲۰ <span class="toman">ت</span></div></div></div><div class="mc-bottom"><span class="mc-months">📅 ۳ ماه</span></div></div></div>
-      <div class="empty-state" id="visitorEmpty" style="display: none;"><div class="big">📱</div><div>کالایی نیست</div></div>
+      <div class="mobile-cards" id="visitorMobileCards"></div>
+      <div class="empty-state" id="visitorEmpty"><div class="big">📱</div><div>کالایی نیست</div></div>
     </div>
   </div>
 
@@ -694,7 +696,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
   </div>
 </div>
 
-<button class="fab-visit show" id="fabVisit">📍</button>
+<button class="fab-visit" id="fabVisit">📍</button>
 <button class="cart-fab" id="fabCart">🛒<span class="cart-badge" id="cartBadge">۰</span></button>
 
 <div class="install-banner" id="installBanner">
@@ -753,7 +755,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     <div class="modal-row"><label>نام</label><input type="text" id="editName"></div>
     <div class="modal-row"><label>💵 نقدی</label><input type="text" id="editCash" inputmode="numeric" oninput="formatThis(this)"></div>
     <div class="modal-row"><label>📝 چکی</label><input type="text" id="editCheck" inputmode="numeric" oninput="formatThis(this)"></div>
-    <div class="modal-row"><label>📅 ماه</label><select id="editMonths"><option value="1">۱ ماه</option><option value="2">۲ ماه</option><option value="3">۳ ماه</option><option value="4">۴ ماه</option><option value="5">۵ ماه</option><option value="6">۶ ماه</option><option value="7">۷ ماه</option><option value="8">۸ ماه</option><option value="9">۹ ماه</option><option value="10">۱۰ ماه</option><option value="11">۱۱ ماه</option><option value="12">۱۲ ماه</option></select></div>
+    <div class="modal-row"><label>📅 ماه</label><select id="editMonths"></select></div>
     <div class="btn-row">
       <button class="btn btn-green" id="saveEditBtn" style="flex:1">✅</button>
       <button class="btn btn-gray" id="cancelEditBtn" style="flex:1">❌</button>
@@ -812,7 +814,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
   <div class="modal visit-modal">
     <h2>📍 ثبت بازدید</h2>
     <div class="location-status loading" id="locationStatus">⏳ GPS...</div>
-    <div class="modal-row"><label>👤 صاحب *</label><input type="text" id="visitOwner" required="" list="ownerDatalist" oninput="onVisitOwnerInput()" onchange="onVisitOwnerChange()"><datalist id="ownerDatalist"></datalist></div>
+    <div class="modal-row"><label>👤 صاحب *</label><input type="text" id="visitOwner" required list="ownerDatalist" oninput="onVisitOwnerInput()" onchange="onVisitOwnerChange()"><datalist id="ownerDatalist"></datalist></div>
     <div class="modal-row"><label>📞 تلفن</label><input type="tel" id="visitPhone" inputmode="numeric"></div>
     <div class="modal-row"><label>🏪 مغازه *</label><input type="text" id="visitShop" list="customerDatalist"><datalist id="customerDatalist"></datalist></div>
     <div class="modal-row"><label>📝 یادداشت</label><textarea id="visitNote"></textarea></div>
@@ -828,7 +830,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     </div>
     <div class="modal-row" style="background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--bd)">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--green)">
-        <input type="checkbox" id="saveAsCustomer" checked="" style="width:18px;height:18px">
+        <input type="checkbox" id="saveAsCustomer" checked style="width:18px;height:18px">
         <span>💾 ذخیره در دفترچه</span>
       </label>
     </div>
@@ -871,7 +873,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       <input type="tel" id="cartCustomerPhone" placeholder="09..." inputmode="numeric">
       <label>💳 روش پرداخت</label>
       <div class="btn-row" style="margin-top:0">
-        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg);border:1px solid var(--bd2);border-radius:8px;padding:9px;cursor:pointer;color:var(--green)"><input type="radio" name="payMethod" value="cash" checked="" style="width:16px;height:16px"> 💵 نقدی</label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg);border:1px solid var(--bd2);border-radius:8px;padding:9px;cursor:pointer;color:var(--green)"><input type="radio" name="payMethod" value="cash" checked style="width:16px;height:16px"> 💵 نقدی</label>
         <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--bg);border:1px solid var(--bd2);border-radius:8px;padding:9px;cursor:pointer;color:var(--yellow)"><input type="radio" name="payMethod" value="check" style="width:16px;height:16px"> 📝 چکی</label>
       </div>
       <label>📝 توضیحات</label>
@@ -2485,7 +2487,12 @@ function downloadMeta(s){
         if(d.record.visitors){
           var rv=d.record.visitors;
           rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
-          APP.visitors=mergeVisitors(APP.visitors,rv);
+          // ویزیتورها: مدیر مرجع است → remote جایگزین میشه، ولی رمز local حفظ میشه
+          APP.visitors=rv.map(function(rv){
+            var lv=APP.visitors.find(function(x){return x.name===rv.name});
+            if(lv&&lv.password&&!rv.password)rv.password=lv.password;
+            return rv;
+          });
         }
         if(d.record.visits)
           APP.visits=mergeById(APP.visits,d.record.visits);
@@ -2519,12 +2526,16 @@ function downloadProductsJB(s){
     .then(function(d){
       if(d.record&&d.record.products){
         var remote=d.record.products;
-        remote.forEach(function(p){if(!p.images)p.images=[]});
-        APP.products=mergeById(APP.products,remote);
-        APP.products.forEach(function(p){if(!p.images)p.images=[]});
+        // تصاویر local رو نگه میداریم (چون روی imgbb ذخیره‌ن)
+        var localImgMap={};
+        APP.products.forEach(function(p){if(p.images&&p.images.length)localImgMap[p.id]=p.images});
+        // محصولات فقط مدیر تغییر میده → remote کاملاً مرجع است (حذف هم اعمال میشه)
+        APP.products=remote.map(function(p){
+          if(!p.images)p.images=[];
+          if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
+          return p;
+        });
         saveLocal();renderAll();logSync("✅");
-        // بعد از merge، آپلود کن
-        setTimeout(function(){uploadProductsJB(true)},600);
         if(!s)toast(toPe(APP.products.length)+" کالا");
       }
     }).catch(function(){logSync("❌");if(!s)toast("خطا",1)});
@@ -2532,6 +2543,15 @@ function downloadProductsJB(s){
 function logSync(m){$("syncLog").innerHTML="<div>"+m+"</div>"+$("syncLog").innerHTML}
 
 window.addEventListener("online",function(){if(CFG.jbKey){uploadMeta(true);uploadProductsJB(true)}});
+
+// ── sync خودکار هر ۴۵ ثانیه ──────────────────────────────────────────────────
+// محصولات: همه کاربر دریافت میکنن (مدیر مرجعه)
+// meta (مشتری، سفارش، بازدید): merge دو طرفه
+setInterval(function(){
+  if(!navigator.onLine||!CFG.jbKey)return;
+  downloadProductsJB(true);
+  setTimeout(function(){downloadMeta(true)},2000);
+},45000);
 
 // PWA
 window.addEventListener("beforeinstallprompt",function(e){
@@ -2662,5 +2682,5 @@ window.onload=function(){
   });
 };
 </script>
-
-</body></html>
+</body>
+</html>
