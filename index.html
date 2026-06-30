@@ -2743,13 +2743,24 @@ function downloadMeta(s){
           return r;
         });
       }
+      var hadNewLocal=false;
+      function checkNew(localArr,remoteArr){
+        if(!remoteArr)return false;
+        var remoteIds={}; remoteArr.forEach(function(r){if(r&&r.id)remoteIds[String(r.id)]=1;});
+        return localArr.some(function(l){return l&&l.id&&!remoteIds[String(l.id)];});
+      }
+      if(checkNew(APP.visits,d.visits))       hadNewLocal=true;
+      if(checkNew(APP.customers,d.customers)) hadNewLocal=true;
+      if(checkNew(APP.orders,d.orders))       hadNewLocal=true;
+      if(checkNew(APP.reminders,d.reminders)) hadNewLocal=true;
+
       if(d.visits)    APP.visits    = mergeById(APP.visits,   d.visits);
       if(d.customers) APP.customers = mergeById(APP.customers,d.customers);
       if(d.orders)    APP.orders    = mergeById(APP.orders,   d.orders);
       if(d.reminders) APP.reminders = mergeById(APP.reminders,d.reminders);
       saveLocal();renderAll();updateTopUI();
-      // بعد از merge، نسخه کامل رو آپلود کن تا cloud هم sync بشه
-      setTimeout(function(){uploadMeta(true)},800);
+      // فقط اگه local چیزی داشت که remote نداشت (مثلاً تغییر آفلاین قدیمی)، دوباره آپلود کن
+      if(hadNewLocal) setTimeout(function(){uploadMeta(true)},800);
       if(!s)toast("دریافت ✅");
     }
   });
@@ -2841,12 +2852,13 @@ function applyRemoteMeta(d){
     });
     changed = true;
   }
-  var pv=APP.visits.length, po=APP.orders.length, pc=APP.customers.length;
   if(d.visits)    APP.visits    = mergeById(APP.visits,    d.visits);
   if(d.customers) APP.customers = mergeById(APP.customers, d.customers);
   if(d.orders)    APP.orders    = mergeById(APP.orders,    d.orders);
   if(d.reminders) APP.reminders = mergeById(APP.reminders, d.reminders);
-  if(APP.visits.length!==pv || APP.orders.length!==po || APP.customers.length!==pc) changed=true;
+  // همیشه ذخیره/رندر کن — نه فقط وقتی طول آرایه عوض میشه.
+  // ویرایش و حذف (تومبستون) باعث تغییر طول آرایه نمیشن ولی باید اعمال بشن.
+  changed = true;
   if(changed){ saveLocal(); renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد"); }
 }
 
