@@ -2368,7 +2368,7 @@ function renderToday(){
     var jStr=fmtDate(r.dueDate);
     var ownerName=(function(){var c=APP.customers.find(function(x){return x.id===r.customerId||(x.shop===r.shop&&x.visitor===r.visitor)});return c&&c.owner?c.owner:'';})();
     var displayName=ownerName||r.shop||'';
-    h+='<div class="'+cls+'"><div class="today-icon">'+icon+'</div><div class="today-info"><div class="today-shop">👤 '+esc(displayName)+'</div>'+(ownerName&&r.shop&&ownerName!==r.shop?'<div class="today-detail">🏪 '+esc(r.shop)+'</div>':'')+'<div class="today-detail">📅 '+jStr+' ('+lbl+')</div>'+((r.text||r.note)?'<div class="today-detail">📝 '+esc(r.text||r.note)+'</div>':'')+(r.phone?'<div class="today-detail">📞 '+esc(r.phone)+'</div>':'')+'</div><div class="today-actions">'+(r.phone?'<button class="btn btn-wa btn-sm" onclick="openWA(\''+esc(r.phone)+'\',\'سلام\')">💬</button>':'')+'<button class="btn btn-green btn-sm" onclick="doneReminder(\''+r.id+'\')">✅</button><button class="btn btn-red btn-sm" onclick="deleteReminder(\''+r.id+'\')">🗑️</button></div></div>';
+    h+='<div class="'+cls+'"><div class="today-icon">'+icon+'</div><div class="today-info">'+(APP.isAdmin&&r.visitor?'<div class="today-detail" style="color:var(--blue);font-weight:600">👤 '+esc(r.visitor)+'</div>':'')+'<div class="today-shop">👤 '+esc(displayName)+'</div>'+(ownerName&&r.shop&&ownerName!==r.shop?'<div class="today-detail">🏪 '+esc(r.shop)+'</div>':'')+'<div class="today-detail">📅 '+jStr+' ('+lbl+')</div>'+((r.text||r.note)?'<div class="today-detail">📝 '+esc(r.text||r.note)+'</div>':'')+(r.phone?'<div class="today-detail">📞 '+esc(r.phone)+'</div>':'')+'</div><div class="today-actions">'+(r.phone?'<button class="btn btn-wa btn-sm" onclick="openWA(\''+esc(r.phone)+'\',\'سلام\')">💬</button>':'')+'<button class="btn btn-green btn-sm" onclick="doneReminder(\''+r.id+'\')">✅</button><button class="btn btn-red btn-sm" onclick="deleteReminder(\''+r.id+'\')">🗑️</button></div></div>';
   });
   l.innerHTML=h;
 }
@@ -3086,6 +3086,7 @@ window.onload=function(){
   $("clearCartBtn").onclick=clearCart;
   $("finalizeOrderBtn").onclick=finalizeOrder;
   $("cartCustomerName").oninput=onCartCustomerNameChange;
+  $("cartCustomerName").onchange=onCartCustomerNameChange;
   $("cartSetReminder").onchange=function(){$("cartReminderBox").style.display=this.checked?"block":"none"};
 
   $("downloadInvoiceImgBtn").onclick=downloadInvoiceImage;
