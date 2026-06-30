@@ -1531,7 +1531,7 @@ function saveCustomer(){
 function deleteCustomer(id){
   if(!confirm("حذف؟"))return;
   var c=APP.customers.find(function(x){return x.id===id});
-  if(c){c.deleted=true;c.updatedAt=Date.now();}
+  if(c){c.deleted=true;c.updatedAt=new Date().toISOString();}
   saveLocal();
   if(APP.currentMode==="customers")renderMyCustomers();
   if(APP.currentMode==="admin"&&APP.currentAdminTab==="customers")renderAdminCustomers();
@@ -1545,7 +1545,19 @@ function renderCamBtn(p){
   var imgs=p.images||[],has=imgs.length>0;
   return '<button class="cam-trigger'+(has?' has-images':'')+'" onclick="openGallery('+p.id+')">'+(has?"🖼️":"📷")+(has?'<span class="img-count">'+toPe(imgs.length)+'</span>':'')+'</button>';
 }
-function renderAll(){renderAdminProducts();renderVisitorProducts();updateTopUI();updateSelectionBar()}
+function renderAll(){
+  renderAdminProducts();renderVisitorProducts();updateTopUI();updateSelectionBar();
+  // صفحات سفارش/بازدید/مشتری/یادآور هم باید بعد از sync رفرش بشن
+  // وگرنه merge درست انجام میشه ولی روی صفحه چیزی عوض نمیشه
+  try{ if(APP.currentVisitor) renderMyOrders(); }catch(e){}
+  try{ if(APP.isAdmin) renderAdminOrders(); }catch(e){}
+  try{ if(APP.currentVisitor) renderMyVisits(); }catch(e){}
+  try{ if(APP.isAdmin) renderAdminVisits(); }catch(e){}
+  try{ if(APP.currentVisitor) renderMyCustomers(); }catch(e){}
+  try{ if(APP.isAdmin) renderAdminCustomers(); }catch(e){}
+  try{ if(APP.currentVisitor) renderMyReminders(); }catch(e){}
+  try{ updateBell(); }catch(e){}
+}
 function renderAdminProducts(){
   var body=$("adminBody"),mc=$("adminMobileCards"),em=$("adminEmpty");
   if(!APP.products.length){body.innerHTML="";mc.innerHTML="";em.style.display="block";return}
@@ -2069,7 +2081,7 @@ function cancelCart(){
 }
 function resendToManager(id){var o=APP.orders.find(function(x){return x.id===id});if(!o)return;APP.lastInvoice=o;sendManager()}
 function resendToCustomer(id){var o=APP.orders.find(function(x){return x.id===id});if(!o)return;APP.lastInvoice=o;sendCustomer()}
-function deleteOrder(id){if(!confirm("حذف؟"))return;var o=APP.orders.find(function(x){return x.id===id});if(o){o.deleted=true;o.updatedAt=Date.now();}saveLocal();if(APP.currentMode==="orders")renderMyOrders();if(APP.currentMode==="admin"&&APP.currentAdminTab==="orders")renderAdminOrders();toast("حذف شد")}
+function deleteOrder(id){if(!confirm("حذف؟"))return;var o=APP.orders.find(function(x){return x.id===id});if(o){o.deleted=true;o.updatedAt=new Date().toISOString();}saveLocal();if(APP.currentMode==="orders")renderMyOrders();if(APP.currentMode==="admin"&&APP.currentAdminTab==="orders")renderAdminOrders();toast("حذف شد")}
 function exportOrdersExcel(){
   if(typeof XLSX==="undefined"||!APP.orders.length){toast("خالی",1);return}
   var d=[["#","شماره","ویزیتور","مشتری","تلفن","تعداد","روش پرداخت","مبلغ فروش","تاریخ"]];
@@ -2276,7 +2288,7 @@ function renderAdminVisits(){
   $("adminVisitsList").innerHTML=arr.length?arr.map(function(v){return renderVisitCard(v,true)}).join(""):emptyMsg;
   if(APP.adminMap)updateAdminMap(arr);
 }
-function deleteVisit(id){if(!confirm("حذف؟"))return;var v=APP.visits.find(function(x){return x.id===id});if(v){v.deleted=true;v.updatedAt=Date.now();}saveLocal();if(APP.currentMode==="visits")renderMyVisits();if(APP.currentMode==="admin"&&APP.currentAdminTab==="visits")renderAdminVisits();toast("حذف شد")}
+function deleteVisit(id){if(!confirm("حذف؟"))return;var v=APP.visits.find(function(x){return x.id===id});if(v){v.deleted=true;v.updatedAt=new Date().toISOString();}saveLocal();if(APP.currentMode==="visits")renderMyVisits();if(APP.currentMode==="admin"&&APP.currentAdminTab==="visits")renderAdminVisits();toast("حذف شد")}
 
 // MAPS
 function initAdminMap(){
@@ -2361,7 +2373,7 @@ function renderToday(){
   l.innerHTML=h;
 }
 function doneReminder(id){APP.reminders.forEach(function(r){if(r.id===id)r.completed=true});saveLocal();updateBell();renderToday();if(APP.currentMode==="reminders")renderMyReminders()}
-function deleteReminder(id){if(!confirm("حذف یادآور؟"))return;var r=APP.reminders.find(function(x){return x.id===id});if(r){r.deleted=true;r.updatedAt=Date.now();}saveLocal();updateBell();renderToday();if(APP.currentMode==="reminders")renderMyReminders()}
+function deleteReminder(id){if(!confirm("حذف یادآور؟"))return;var r=APP.reminders.find(function(x){return x.id===id});if(r){r.deleted=true;r.updatedAt=new Date().toISOString();}saveLocal();updateBell();renderToday();if(APP.currentMode==="reminders")renderMyReminders()}
 
 // STATS
 function renderStats(){
@@ -2448,6 +2460,12 @@ function renderAdvancedReports(){
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── merge helpers ────────────────────────────────────────────────────────────
+function _toMs(t){
+  if(!t)return 0;
+  if(typeof t==="number")return t;
+  var n=Date.parse(t);
+  return isNaN(n)?0:n;
+}
 function mergeById(localArr,remoteArr){
   var result=[];
   var seen={};
@@ -2460,8 +2478,8 @@ function mergeById(localArr,remoteArr){
     var key=String(l.id);
     if(seen[key]!==undefined){
       var existing=result[seen[key]];
-      var lTime=l.updatedAt||l.createdAt||0;
-      var rTime=existing.updatedAt||existing.createdAt||0;
+      var lTime=_toMs(l.updatedAt||l.createdAt);
+      var rTime=_toMs(existing.updatedAt||existing.createdAt);
       // آخرین تغییر (چه delete چه edit) برنده است — تومبستون هم با همین قانون merge میشه
       if(lTime>=rTime)result[seen[key]]=l;
     }else{
@@ -2473,7 +2491,7 @@ function mergeById(localArr,remoteArr){
   var now=Date.now();
   result=result.filter(function(x){
     if(!x.deleted)return true;
-    var t=x.updatedAt||x.createdAt||0;
+    var t=_toMs(x.updatedAt||x.createdAt);
     return (now-t) < THIRTY_DAYS;
   });
   return result;
