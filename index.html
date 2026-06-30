@@ -1688,6 +1688,16 @@ function renderAll(){
   try{ if(APP.currentVisitor) renderMyReminders(); }catch(e){}
   try{ updateBell(); }catch(e){}
 }
+// safeRenderAll: وقتی کاربر در حال تعامل با فرم/select/input است،
+// رندر رو در صف می‌ذاره تا بعد از آزاد شدن اعمال بشه.
+// برای sync/upload callbackها به‌جای renderAll مستقیم استفاده میشه.
+function safeRenderAll(updateTop){
+  if(isUserInteracting()){
+    _pendingRerenderMeta=true;
+    return;
+  }
+  renderAll();
+}
 function renderAdminProducts(){
   var body=$("adminBody"),mc=$("adminMobileCards"),em=$("adminEmpty");
   if(!APP.products.length){body.innerHTML="";mc.innerHTML="";em.style.display="block";return}
@@ -2645,6 +2655,7 @@ var _fbReachable = true;
 var _userEditingPriceField = false;
 var _pendingRerenderProducts = false;
 var _pendingRerenderMeta = null;
+var _pendingTopUI = false;
 function isUserInteracting(){
   var ae=document.activeElement;
   if(ae){
@@ -2863,7 +2874,7 @@ function downloadProductsJB(s){
         if(localImgMap[p.id]&&localImgMap[p.id].length>p.images.length)p.images=localImgMap[p.id];
         return p;
       });
-      saveLocal();renderAll();logSync("✅ "+toPe(APP.products.length)+" کالا");
+      saveLocal();safeRenderAll(false);logSync("✅ "+toPe(APP.products.length)+" کالا");
       if(!s)toast(toPe(APP.products.length)+" کالا دریافت شد");
     }
   });
@@ -2926,7 +2937,7 @@ function uploadMeta(s,doneCb){
       updatedAt:Date.now()
     };
     fbSet("meta",data,function(){
-      saveLocal();renderAll();updateTopUI();
+      saveLocal();safeRenderAll(true);
       if(!s)toast("همگام‌سازی ✅");
       _uploadMetaInFlight=false;
       if(doneCb) doneCb();
@@ -2970,7 +2981,7 @@ function downloadMeta(s){
       if(d.customers) APP.customers = mergeById(APP.customers,d.customers);
       if(d.orders)    APP.orders    = mergeById(APP.orders,   d.orders);
       if(d.reminders) APP.reminders = mergeById(APP.reminders,d.reminders);
-      saveLocal();renderAll();updateTopUI();
+      saveLocal();safeRenderAll(true);
       // فقط اگه local چیزی داشت که remote نداشت (مثلاً تغییر آفلاین قدیمی)، دوباره آپلود کن
       if(hadNewLocal) setTimeout(function(){uploadMeta(true)},800);
       if(!s)toast("دریافت ✅");
@@ -3052,7 +3063,7 @@ function applyRemoteProducts(d){
   // چون باعث می‌شه ورودی از زیر دستش عوض بشه و فوکوس/مقدار در حال تایپ از بین بره.
   // به‌محض اینکه آزاد شد، خودکار رندر می‌شه.
   if(_userEditingPriceField || isUserInteracting()){ _pendingRerenderProducts=true; return; }
-  renderAll(); logSync("✅ محصولات بروز شد");
+  safeRenderAll(false); logSync("✅ محصولات بروز شد");
 }
 
 function applyRemoteMeta(d){
@@ -3082,7 +3093,7 @@ function applyRemoteMeta(d){
   if(changed){
     saveLocal();
     if(_userEditingPriceField || isUserInteracting()){ _pendingRerenderMeta=true; return; }
-    renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد");
+    safeRenderAll(true); logSync("✅ داده‌ها بروز شد");
   }
 }
 
@@ -3123,8 +3134,11 @@ window.addEventListener("offline", function(){
 setInterval(updateNetStatusBadge, 5000);
 setInterval(function(){
   if(isUserInteracting())return;
-  if(_pendingRerenderProducts){ _pendingRerenderProducts=false; renderAll(); logSync("✅ محصولات بروز شد (به‌تعویق‌افتاده)"); }
-  if(_pendingRerenderMeta){ _pendingRerenderMeta=false; renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد (به‌تعویق‌افتاده)"); }
+  var needRender=_pendingRerenderProducts||_pendingRerenderMeta;
+  var needTop=_pendingTopUI;
+  _pendingRerenderProducts=false;_pendingRerenderMeta=false;_pendingTopUI=false;
+  if(needRender){renderAll();logSync("✅ بروزرسانی اعمال شد");}
+  if(needTop&&!needRender){updateTopUI();}
 },1500);
 
 // وقتی tab دوباره visible میشه (کاربر برمیگرده)، داده رو refresh کن
