@@ -1172,7 +1172,7 @@ function autoCloudSync(){
       return;
     }
     uploadMeta(true);
-    uploadProductsJB(true);
+    if(APP.isAdmin) uploadProductsJB(true);
   },1500);
 }
 function autoSave(){
@@ -2668,18 +2668,45 @@ function downloadProductsJB(s){
 // ══════════════════════════════════════════════════════════════════════════════
 function uploadMeta(s,doneCb){
   if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
-  var data={
-    visitors:APP.visitors,
-    visits:APP.visits,
-    customers:APP.customers,
-    orders:APP.orders,
-    reminders:APP.reminders,
-    updatedAt:Date.now()
-  };
-  fbSet("meta",data,function(){
-    if(!s)toast("همگام‌سازی ✅");
-    if(doneCb) doneCb();
+  // قبل از ارسال، اول نسخه فعلی Firebase رو بگیر و merge کن
+  // تا تغییرات کاربر دیگه‌ای که هم‌زمان ثبت شده پاک نشه
+  var got=false;
+  fbGet("meta",function(remote){
+    got=true;
+    if(remote){
+      if(remote.visitors){
+        var rv=remote.visitors;
+        rv.forEach(function(v,i){if(typeof v==="string")rv[i]={name:v,password:""}});
+        APP.visitors=rv.map(function(r){
+          var lv=APP.visitors.find(function(x){return x.name===r.name});
+          if(lv&&lv.password&&!r.password)r.password=lv.password;
+          return r;
+        });
+      }
+      if(remote.visits)    APP.visits    = mergeById(APP.visits,   remote.visits);
+      if(remote.customers) APP.customers = mergeById(APP.customers,remote.customers);
+      if(remote.orders)    APP.orders    = mergeById(APP.orders,   remote.orders);
+      if(remote.reminders) APP.reminders = mergeById(APP.reminders,remote.reminders);
+    }
+    var data={
+      visitors:APP.visitors,
+      visits:APP.visits,
+      customers:APP.customers,
+      orders:APP.orders,
+      reminders:APP.reminders,
+      updatedAt:Date.now()
+    };
+    fbSet("meta",data,function(){
+      saveLocal();renderAll();updateTopUI();
+      if(!s)toast("همگام‌سازی ✅");
+      if(doneCb) doneCb();
+    });
   });
+  // اگه دریافت نسخه remote شکست خورد (مثلاً VPN قطعه)، تغییرات local رو
+  // به صف pending اضافه کن تا بعداً (با merge درست) ارسال بشه — گمش نکن
+  setTimeout(function(){
+    if(!got){ markPending("meta"); scheduleSyncRetry(); }
+  },4000);
 }
 
 function downloadMeta(s){
