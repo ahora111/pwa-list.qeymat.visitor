@@ -419,6 +419,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       <div class="badge badge-dark" id="dateView"></div>
       <div class="badge badge-blue" id="countView">۰ کالا</div>
       <div class="badge badge-orange" id="currentVisitorBadge" style="display:none" onclick="changeVisitor()">👤 <span id="currentVisitorName">-</span></div>
+      <span id="netStatusBadge" title="وضعیت اتصال" style="background:#16a34a;color:#fff;padding:4px 9px;border-radius:7px;font-size:.72rem;font-weight:700">🟢 آنلاین</span>
       <span id="syncPendingBadge" title="تغییرات ارسال نشده — در انتظار VPN" onclick="flushPendingSync()" style="display:none;background:#dc2626;color:#fff;padding:4px 9px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;animation:bellPulse 1.5s infinite">⏳ صف</span>
       <button class="bell-btn" id="bellBtn" onclick="toggleTodayPanel()">🔔<span class="bell-badge hide" id="bellBadge">۰</span></button>
       <button class="user-status visitor" id="userStatus"><span id="userStatusIcon">👤</span><span id="userStatusText">ویزیتور</span></button>
@@ -457,7 +458,27 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     </div>
 
     <div class="panel" style="margin-top:10px">
-      <button class="btn btn-blue" style="width:100%" onclick="downloadFullBackup()">💾 بکاپ کامل (دانلود فایل)</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-blue" style="flex:1" onclick="downloadFullBackup()">💾 بکاپ کامل</button>
+        <button class="btn btn-purple" style="flex:1" onclick="openRestorePanel()">📥 بازگردانی از فایل</button>
+      </div>
+      <input type="file" id="restoreFileInput" accept="application/json,.json" style="display:none" onchange="onRestoreFileSelected(event)">
+      <div id="restorePanel" class="hidden" style="margin-top:12px;background:var(--bg);padding:12px;border-radius:8px;border:1px solid var(--bd)">
+        <div id="restoreFileInfo" style="font-size:.8rem;color:var(--tx2);margin-bottom:8px"></div>
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">بخش‌هایی که می‌خواهید بازگردانی شود:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="restoreProducts" checked> 💰 کالاها</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="restoreVisitors" checked> 👥 ویزیتورها</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="restoreCustomers" checked> 📞 مشتریان</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="restoreOrders" checked> 🧾 سفارش‌ها</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="restoreVisits" checked> 📍 بازدیدها</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="restoreReminders" checked> 🔔 یادآورها</label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" style="flex:1" onclick="applyRestore()">✅ اعمال بازگردانی</button>
+          <button class="btn btn-gray" style="flex:1" onclick="closeRestorePanel()">❌ انصراف</button>
+        </div>
+      </div>
     </div>
 
     <div id="adminTab-products" class="admin-tab">
@@ -825,7 +846,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     <div class="modal-row"><label>📝 یادداشت</label><textarea id="visitNote"></textarea></div>
     <div class="modal-row">
       <label>🏷️ وضعیت</label>
-      <select id="visitStatus">
+      <select id="visitStatus" onchange="onVisitStatusChange()">
         <option value="visited">بازدید</option>
         <option value="order">سفارش</option>
         <option value="no_order">بدون سفارش</option>
@@ -834,7 +855,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       </select>
     </div>
     <div class="modal-row" style="background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--bd)">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--green)">
+      <label id="saveAsCustomerLabel" style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--green)">
         <input type="checkbox" id="saveAsCustomer" checked style="width:18px;height:18px">
         <span>💾 ذخیره در دفترچه</span>
       </label>
@@ -1147,6 +1168,71 @@ function checkAutoDailyBackup(){
     if(!APP.products.length&&!APP.orders.length&&!APP.customers.length)return;
     downloadFullBackup();
   }catch(e){}
+}
+
+// ── RESTORE FROM BACKUP ─────────────────────────────────────────────
+var _restoreParsedData=null;
+function openRestorePanel(){
+  $("restoreFileInput").value="";
+  $("restorePanel").classList.add("hidden");
+  _restoreParsedData=null;
+  $("restoreFileInput").click();
+}
+function closeRestorePanel(){
+  $("restorePanel").classList.add("hidden");
+  _restoreParsedData=null;
+}
+function onRestoreFileSelected(ev){
+  var f=ev.target.files&&ev.target.files[0];
+  if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(typeof data!=="object"||data===null)throw new Error("invalid");
+      _restoreParsedData=data;
+      var info="📄 "+esc(f.name);
+      if(data.backupDate)info+=" — تاریخ بکاپ: "+esc(data.backupDate);
+      info+="<br>";
+      info+="💰 کالا: "+toPe((data.products||[]).length)+" | ";
+      info+="👥 ویزیتور: "+toPe((data.visitors||[]).length)+" | ";
+      info+="📞 مشتری: "+toPe((data.customers||[]).length)+"<br>";
+      info+="🧾 سفارش: "+toPe((data.orders||[]).length)+" | ";
+      info+="📍 بازدید: "+toPe((data.visits||[]).length)+" | ";
+      info+="🔔 یادآور: "+toPe((data.reminders||[]).length);
+      $("restoreFileInfo").innerHTML=info;
+      $("restorePanel").classList.remove("hidden");
+    }catch(err){
+      toast("فایل بکاپ نامعتبر است",1);
+      _restoreParsedData=null;
+    }
+  };
+  reader.readAsText(f);
+}
+function applyRestore(){
+  if(!_restoreParsedData){toast("ابتدا فایل را انتخاب کنید",1);return}
+  var sections=[
+    {key:"products",cb:"restoreProducts",label:"کالاها"},
+    {key:"visitors",cb:"restoreVisitors",label:"ویزیتورها"},
+    {key:"customers",cb:"restoreCustomers",label:"مشتریان"},
+    {key:"orders",cb:"restoreOrders",label:"سفارش‌ها"},
+    {key:"visits",cb:"restoreVisits",label:"بازدیدها"},
+    {key:"reminders",cb:"restoreReminders",label:"یادآورها"}
+  ];
+  var chosen=sections.filter(function(s){return $(s.cb).checked});
+  if(!chosen.length){toast("حداقل یک بخش را انتخاب کنید",1);return}
+  var names=chosen.map(function(s){return s.label}).join("، ");
+  if(!confirm("⚠️ بخش‌های زیر با محتوای فایل بکاپ جایگزین می‌شود:\n"+names+"\n\nاین کار قابل بازگشت نیست. ادامه می‌دهید؟"))return;
+  chosen.forEach(function(s){
+    if(_restoreParsedData[s.key]!==undefined){
+      APP[s.key]=_restoreParsedData[s.key];
+    }
+  });
+  saveLocal();
+  renderAll();
+  updateTopUI();
+  closeRestorePanel();
+  toast("بازگردانی انجام شد ✅ ("+names+")");
 }
 function fillJDateSelects(prefix,presetISO){
   var ty=$(prefix+"Year"),tm=$(prefix+"Month"),td=$(prefix+"Day");
@@ -2158,9 +2244,18 @@ function exportCustomersExcel(){
 }
 
 // VISITS
+function onVisitStatusChange(){
+  var isNew=$("visitStatus").value==="new_customer";
+  var cb=$("saveAsCustomer"),lbl=$("saveAsCustomerLabel");
+  cb.disabled=!isNew;
+  cb.checked=isNew;
+  lbl.style.opacity=isNew?"1":".45";
+  lbl.style.cursor=isNew?"pointer":"not-allowed";
+}
 function openVisitModal(){
   if(!APP.currentVisitor){toast("اول وارد شو",1);showVisitorSelect();return}
-  $("visitShop").value="";$("visitOwner").value="";$("visitPhone").value="";$("visitNote").value="";$("visitStatus").value="visited";$("saveAsCustomer").checked=true;
+  $("visitShop").value="";$("visitOwner").value="";$("visitPhone").value="";$("visitNote").value="";$("visitStatus").value="visited";
+  onVisitStatusChange();
   $("reminderNote").value="";
   fillJDateSelects("reminder",null);
   APP.currentLocation=null;
@@ -2217,7 +2312,7 @@ function saveVisit(){
   var v={id:Date.now()+Math.random(),visitor:APP.currentVisitor,shop:sh,owner:$("visitOwner").value.trim(),phone:$("visitPhone").value.trim(),note:$("visitNote").value.trim(),status:$("visitStatus").value,lat:APP.currentLocation?APP.currentLocation.lat:null,lng:APP.currentLocation?APP.currentLocation.lng:null,createdAt:now,updatedAt:now};
   APP.visits.push(v);
 
-  if($("saveAsCustomer").checked&&v.phone){
+  if(v.status==="new_customer"&&$("saveAsCustomer").checked&&v.phone){
     var ex=null;
     APP.customers.forEach(function(c){if(normPhone(c.phone)===normPhone(v.phone)&&c.visitor===APP.currentVisitor)ex=c});
     if(ex){ex.lastVisit=v.createdAt;ex.updatedAt=now;}
@@ -2631,6 +2726,27 @@ function updateSyncBadge(pending){
   if(!el) return;
   el.style.display = pending ? "inline-flex" : "none";
 }
+function updateNetStatusBadge(){
+  var el=$("netStatusBadge");
+  if(!el) return;
+  if(!navigator.onLine){
+    el.style.background="#6b7280";
+    el.textContent="⚫ آفلاین";
+    el.title="اینترنت قطع است — داده‌ها بروز نمی‌شود";
+  }else if(!_fbReachable){
+    el.style.background="#dc2626";
+    el.textContent="🔴 عدم اتصال سرور";
+    el.title="اینترنت وصل است ولی به سرور وصل نمی‌شویم — داده‌ها ممکن است بروز نباشد";
+  }else if(hasPending()){
+    el.style.background="#f59e0b";
+    el.textContent="🟡 در حال همگام‌سازی";
+    el.title="تغییرات در حال ارسال است";
+  }else{
+    el.style.background="#16a34a";
+    el.textContent="🟢 آنلاین";
+    el.title="داده‌ها بروز است";
+  }
+}
 
 // ── retry خودکار هر ۱۵ ثانیه تا زمانی که pending داریم ─────────────────────
 function scheduleSyncRetry(){
@@ -2955,6 +3071,7 @@ function startFirebaseListeners(){
 
 // وقتی اینترنت برگشت، صف رو flush کن و listener رو چک کن
 window.addEventListener("online", function(){
+  updateNetStatusBadge();
   if(!CFG.fbApiKey) return;
   logSync("🌐 اینترنت وصل شد");
   // تست Firebase — اگه VPN هم وصل باشه، flush کن
@@ -2963,18 +3080,24 @@ window.addEventListener("online", function(){
       .then(function(r){
         if(!r.ok) throw 0;
         _fbReachable=true;
+        updateNetStatusBadge();
         // Firebase وصله — هر pending موجودی رو flush کن
         flushPendingSync();
         setTimeout(startFirebaseListeners, 500);
       })
       .catch(function(){
         _fbReachable=false;
+        updateNetStatusBadge();
         logSync("🔴 اینترنت وصله ولی Firebase در دسترس نیست (VPN؟)");
         updateSyncBadge(true);
         scheduleSyncRetry();
       });
   }, 1000);
 });
+window.addEventListener("offline", function(){
+  updateNetStatusBadge();
+});
+setInterval(updateNetStatusBadge, 5000);
 
 // وقتی tab دوباره visible میشه (کاربر برمیگرده)، داده رو refresh کن
 document.addEventListener("visibilitychange", function(){
@@ -3024,6 +3147,7 @@ window.onload=function(){
   loadLocal();
   updateTopUI();
   renderAll();
+  updateNetStatusBadge();
 
   var mh="";for(var m=1;m<=12;m++)mh+='<option value="'+m+'">'+toPe(m)+' ماه</option>';
   $("editMonths").innerHTML=mh;
