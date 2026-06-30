@@ -2322,10 +2322,14 @@ function saveVisit(){
   var v={id:Date.now()+Math.random(),visitor:APP.currentVisitor,shop:sh,owner:$("visitOwner").value.trim(),phone:$("visitPhone").value.trim(),note:$("visitNote").value.trim(),status:$("visitStatus").value,lat:APP.currentLocation?APP.currentLocation.lat:null,lng:APP.currentLocation?APP.currentLocation.lng:null,createdAt:now,updatedAt:now};
   APP.visits.push(v);
 
-  if(v.status==="new_customer"&&$("saveAsCustomer").checked&&v.phone){
+  if(v.status==="new_customer"&&$("saveAsCustomer").checked){
     var ex=null;
-    APP.customers.forEach(function(c){if(normPhone(c.phone)===normPhone(v.phone)&&c.visitor===APP.currentVisitor)ex=c});
-    if(ex){ex.lastVisit=v.createdAt;ex.updatedAt=now;}
+    APP.customers.forEach(function(c){
+      if(c.visitor!==APP.currentVisitor)return;
+      if(v.phone&&c.phone&&normPhone(c.phone)===normPhone(v.phone))ex=c;
+      else if(!ex&&c.shop===sh&&c.owner===v.owner)ex=c;
+    });
+    if(ex){ex.lastVisit=v.createdAt;ex.updatedAt=now;if(v.phone)ex.phone=v.phone;}
     else APP.customers.push({id:"c"+Date.now(),shop:sh,owner:v.owner,phone:v.phone,note:"",visitor:APP.currentVisitor,createdAt:now,updatedAt:now,lastVisit:now});
   }
 
