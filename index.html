@@ -456,6 +456,10 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
       <button class="tab-btn" data-tab="stats" onclick="switchAdminTab('stats')">📊 آمار</button>
     </div>
 
+    <div class="panel" style="margin-top:10px">
+      <button class="btn btn-blue" style="width:100%" onclick="downloadFullBackup()">💾 بکاپ کامل (دانلود فایل)</button>
+    </div>
+
     <div id="adminTab-products" class="admin-tab">
       <div class="panel">
         <div class="panel-title">📤 بارگذاری کالا</div>
@@ -1103,6 +1107,46 @@ function fmtDate(iso){
 function todayISO(){
   var d=new Date();
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function buildBackupData(){
+  return{
+    backupDate:todayISO(),
+    backupAt:new Date().toISOString(),
+    products:APP.products,
+    visitors:APP.visitors,
+    visits:APP.visits,
+    customers:APP.customers,
+    orders:APP.orders,
+    reminders:APP.reminders
+  };
+}
+function downloadFullBackup(){
+  try{
+    var data=buildBackupData();
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;
+    a.download="backup-"+todayISO()+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url)},2000);
+    localStorage.setItem("mp_lastBackupDate",todayISO());
+    toast("بکاپ دانلود شد ✅");
+  }catch(e){
+    toast("خطا در ساخت بکاپ",1);
+  }
+}
+function checkAutoDailyBackup(){
+  try{
+    if(!APP.isAdmin)return;
+    var last=localStorage.getItem("mp_lastBackupDate");
+    var t=todayISO();
+    if(last===t)return;
+    if(!APP.products.length&&!APP.orders.length&&!APP.customers.length)return;
+    downloadFullBackup();
+  }catch(e){}
 }
 function fillJDateSelects(prefix,presetISO){
   var ty=$(prefix+"Year"),tm=$(prefix+"Month"),td=$(prefix+"Day");
@@ -2993,8 +3037,11 @@ window.onload=function(){
     // اول داده‌های تازه از Firebase بگیر، بعد localStorage رو override کن
     downloadProductsJB(true);
     setTimeout(function(){downloadMeta(true);}, 1200);
+    setTimeout(checkAutoDailyBackup, 4000);
     // listeners رو بعد از دریافت اولیه شروع کن
     setTimeout(startFirebaseListeners, 2500);
+  }else{
+    setTimeout(checkAutoDailyBackup, 1000);
   }
 
   // ── Service Worker آپدیت: اگه نسخه جدید آماده بود، صفحه رو reload کن ──────
