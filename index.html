@@ -3164,6 +3164,28 @@ window.addEventListener("beforeinstallprompt",function(e){
   APP.deferredPrompt=e;
   if(!localStorage.getItem("mp_install_dismissed"))$("installBanner").classList.add("show");
 });
+// ── بروزرسانی Service Worker بدون قطع کار کاربر ───────────────────────────
+// قبلاً به‌محض آماده شدن نسخه جدید، صفحه فوری reload می‌شد؛ این باعث می‌شد
+// وسط تایپ عدد یا وسط باز بودن یک select/datalist، صفحه ناگهان رفرش بشه
+// و کیبورد/لیست بسته بشه و چیزی که کاربر تایپ کرده بود از دست بره.
+// حالا فقط وقتی reload می‌کنیم که کاربر در حال تعامل با فرم نیست.
+var _swReloadPending = false;
+function safeReload(){
+  if(isUserInteracting()){
+    _swReloadPending = true;
+    return;
+  }
+  window.location.reload();
+}
+// هر چند ثانیه چک کن: اگه reload در صف بود و کاربر دیگه مشغول نبود، انجامش بده
+setInterval(function(){
+  if(_swReloadPending && !isUserInteracting()) window.location.reload();
+}, 2000);
+// اگه کاربر از صفحه خارج شد (تب رو عوض کرد)، چون دیگه مزاحم تایپش نمیشیم
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden && _swReloadPending) window.location.reload();
+});
+
 if("serviceWorker" in navigator){
   window.addEventListener("load", function(){
     navigator.serviceWorker.register("sw.js").then(function(reg){
@@ -3172,8 +3194,8 @@ if("serviceWorker" in navigator){
         var newWorker = reg.installing;
         newWorker.addEventListener("statechange", function(){
           if(newWorker.state === "installed" && navigator.serviceWorker.controller){
-            // نسخه جدید آماده‌ست — صفحه رو reload کن
-            window.location.reload();
+            // نسخه جدید آماده‌ست — وقتی کاربر مشغول نبود reload کن
+            safeReload();
           }
         });
       });
@@ -3213,7 +3235,7 @@ window.onload=function(){
   // ── Service Worker آپدیت: اگه نسخه جدید آماده بود، صفحه رو reload کن ──────
   if("serviceWorker" in navigator){
     navigator.serviceWorker.addEventListener("controllerchange", function(){
-      window.location.reload();
+      safeReload();
     });
   }
 
