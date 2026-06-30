@@ -2329,7 +2329,7 @@ function saveVisit(){
       if(v.phone&&c.phone&&normPhone(c.phone)===normPhone(v.phone))ex=c;
       else if(!ex&&c.shop===sh&&c.owner===v.owner)ex=c;
     });
-    if(ex){ex.lastVisit=v.createdAt;ex.updatedAt=now;if(v.phone)ex.phone=v.phone;}
+    if(ex){ex.lastVisit=v.createdAt;ex.updatedAt=now;ex.deleted=false;if(v.phone)ex.phone=v.phone;}
     else APP.customers.push({id:"c"+Date.now(),shop:sh,owner:v.owner,phone:v.phone,note:"",visitor:APP.currentVisitor,createdAt:now,updatedAt:now,lastVisit:now});
   }
 
