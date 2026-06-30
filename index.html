@@ -1354,9 +1354,9 @@ function renderCustomerCard(c,showVisitor){
   h+='<div style="font-size:.85rem;color:var(--tx2);margin-top:4px">🏪 '+esc(c.shop||"—")+'</div>';
   if(c.phone)h+='<div class="cc-phone">📞 '+esc(c.phone)+'</div>';
   if(c.lastVisit)h+='<div class="cc-last-visit">🕒 '+fmtDate(c.lastVisit)+'</div>';
-  var custOrders=APP.orders.filter(function(o){return o.cust===c.owner||o.cust===c.shop});
+  var custOrders=APP.orders.filter(function(o){return !o.deleted&&(o.cust===c.owner||o.cust===c.shop)});
   if(custOrders.length>0)h+='<div style="font-size:.72rem;color:var(--green);margin-top:4px">📦 '+custOrders.length+' سفارش</div>';
-  var custReminders=APP.reminders.filter(function(r){return(r.shop===c.owner||r.shop===c.shop)&&!r.completed});
+  var custReminders=APP.reminders.filter(function(r){return!r.deleted&&(r.shop===c.owner||r.shop===c.shop)&&!r.completed});
   if(custReminders.length>0)h+='<div style="font-size:.72rem;color:var(--purple);margin-top:2px">⏰ '+custReminders.length+' یادآور</div>';
   h+='</div><div class="cc-actions">';
   if(c.phone)h+='<button class="btn btn-wa btn-sm" onclick="customerWA(\''+c.id+'\')">💬</button><button class="btn btn-blue btn-sm" onclick="customerCall(\''+c.id+'\')">📞</button>';
@@ -1373,7 +1373,7 @@ function renderCustomerCard(c,showVisitor){
 function showCustomerOrders(customerId){
   var c=APP.customers.find(function(x){return x.id===customerId});
   if(!c)return;
-  var custOrders=APP.orders.filter(function(o){return o.cust===c.shop}).sort(function(a,b){return new Date(b.at)-new Date(a.at)});
+  var custOrders=APP.orders.filter(function(o){return !o.deleted&&o.cust===c.shop}).sort(function(a,b){return new Date(b.at)-new Date(a.at)});
   $("custOrdersShopLabel").textContent=c.shop||"";
   var h="";
   if(!custOrders.length)h='<div class="empty-state"><div class="big">📦</div><div>هنوز سفارشی ثبت نشده</div></div>';
@@ -1428,7 +1428,7 @@ function saveReminderModal(){
 }
 
 function renderMyReminders(){
-  var mine=APP.reminders.filter(function(r){return r.visitor===APP.currentVisitor});
+  var mine=APP.reminders.filter(function(r){return!r.deleted&&r.visitor===APP.currentVisitor});
   mine.sort(function(a,b){return(a.dueDate||"")<(b.dueDate||"")?-1:1});
   $("myRemindersCount").textContent=toPe(mine.length);
   var html='';
@@ -1478,7 +1478,7 @@ function getTodayJalali(){
 
 function renderMyCustomers(){
   var q=($("customerSearch").value||"").trim().toLowerCase();
-  var mine=APP.customers.filter(function(c){return c.visitor===APP.currentVisitor});
+  var mine=APP.customers.filter(function(c){return !c.deleted&&c.visitor===APP.currentVisitor});
   if(q)mine=mine.filter(function(c){return(c.shop||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.owner||"").toLowerCase().includes(q)});
   mine.sort(function(a,b){return new Date(b.lastVisit||b.createdAt||0)-new Date(a.lastVisit||a.createdAt||0)});
   $("myCustomersCount").textContent=toPe(mine.length);
@@ -1486,7 +1486,7 @@ function renderMyCustomers(){
 }
 function renderAdminCustomers(){
   var q=($("adminCustomerSearch").value||"").trim().toLowerCase();
-  var all=APP.customers.slice();
+  var all=APP.customers.filter(function(c){return !c.deleted});
   if(q)all=all.filter(function(c){return(c.shop||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.visitor||"").toLowerCase().includes(q)});
   $("adminCustomersList").innerHTML=all.length?all.map(function(c){return renderCustomerCard(c,true)}).join(""):'<div class="empty-state"><div class="big">📞</div><div>خالی</div></div>';
 }
@@ -1530,7 +1530,8 @@ function saveCustomer(){
 }
 function deleteCustomer(id){
   if(!confirm("حذف؟"))return;
-  APP.customers=APP.customers.filter(function(c){return c.id!==id});
+  var c=APP.customers.find(function(x){return x.id===id});
+  if(c){c.deleted=true;c.updatedAt=Date.now();}
   saveLocal();
   if(APP.currentMode==="customers")renderMyCustomers();
   if(APP.currentMode==="admin"&&APP.currentAdminTab==="customers")renderAdminCustomers();
@@ -2005,6 +2006,7 @@ function clearOrdersDateFilter(){
 function renderMyOrders(){
   var df=getJalaliFilterISO("orders");
   var arr=APP.orders.filter(function(o){
+    if(o.deleted)return false;
     if(o.vis!==APP.currentVisitor)return false;
     if(df){var d=o.at?o.at.substr(0,10):"";return d===df;}
     return true;
@@ -2027,6 +2029,7 @@ function clearAdminOrdersDateFilter(){
 function renderAdminOrders(){
   var df=getJalaliFilterISO("adminOrders");
   var arr=APP.orders.filter(function(o){
+    if(o.deleted)return false;
     if(df){var d=o.at?o.at.substr(0,10):"";return d===df;}
     return true;
   }).sort(function(a,b){return new Date(b.at)-new Date(a.at)});
@@ -2066,7 +2069,7 @@ function cancelCart(){
 }
 function resendToManager(id){var o=APP.orders.find(function(x){return x.id===id});if(!o)return;APP.lastInvoice=o;sendManager()}
 function resendToCustomer(id){var o=APP.orders.find(function(x){return x.id===id});if(!o)return;APP.lastInvoice=o;sendCustomer()}
-function deleteOrder(id){if(!confirm("حذف؟"))return;APP.orders=APP.orders.filter(function(o){return o.id!==id});saveLocal();if(APP.currentMode==="orders")renderMyOrders();if(APP.currentMode==="admin"&&APP.currentAdminTab==="orders")renderAdminOrders();toast("حذف شد")}
+function deleteOrder(id){if(!confirm("حذف؟"))return;var o=APP.orders.find(function(x){return x.id===id});if(o){o.deleted=true;o.updatedAt=Date.now();}saveLocal();if(APP.currentMode==="orders")renderMyOrders();if(APP.currentMode==="admin"&&APP.currentAdminTab==="orders")renderAdminOrders();toast("حذف شد")}
 function exportOrdersExcel(){
   if(typeof XLSX==="undefined"||!APP.orders.length){toast("خالی",1);return}
   var d=[["#","شماره","ویزیتور","مشتری","تلفن","تعداد","روش پرداخت","مبلغ فروش","تاریخ"]];
@@ -2238,6 +2241,7 @@ function clearVisitsDateFilter(){
 function renderMyVisits(){
   var df=getJalaliFilterISO("visits");
   var arr=APP.visits.filter(function(v){
+    if(v.deleted)return false;
     if(v.visitor!==APP.currentVisitor)return false;
     if(df){var d=v.createdAt?v.createdAt.substr(0,10):"";return d===df;}
     return true;
@@ -2262,6 +2266,7 @@ function renderAdminVisits(){
   var fv=$("adminMapVisitorFilter").value;
   var df=getJalaliFilterISO("adminVisits");
   var arr=APP.visits.filter(function(v){
+    if(v.deleted)return false;
     if(fv&&v.visitor!==fv)return false;
     if(df){var d=v.createdAt?v.createdAt.substr(0,10):"";return d===df;}
     return true;
@@ -2271,7 +2276,7 @@ function renderAdminVisits(){
   $("adminVisitsList").innerHTML=arr.length?arr.map(function(v){return renderVisitCard(v,true)}).join(""):emptyMsg;
   if(APP.adminMap)updateAdminMap(arr);
 }
-function deleteVisit(id){if(!confirm("حذف؟"))return;APP.visits=APP.visits.filter(function(v){return v.id!==id});saveLocal();if(APP.currentMode==="visits")renderMyVisits();if(APP.currentMode==="admin"&&APP.currentAdminTab==="visits")renderAdminVisits();toast("حذف شد")}
+function deleteVisit(id){if(!confirm("حذف؟"))return;var v=APP.visits.find(function(x){return x.id===id});if(v){v.deleted=true;v.updatedAt=Date.now();}saveLocal();if(APP.currentMode==="visits")renderMyVisits();if(APP.currentMode==="admin"&&APP.currentAdminTab==="visits")renderAdminVisits();toast("حذف شد")}
 
 // MAPS
 function initAdminMap(){
@@ -2324,6 +2329,7 @@ function updateAdminMapFilter(){
 function getTodayReminders(){
   var t=todayISO();
   return APP.reminders.filter(function(r){
+    if(r.deleted)return false;
     if(r.completed)return false;
     if(r.visitor!==APP.currentVisitor&&!APP.isAdmin)return false;
     return r.dueDate<=t;
@@ -2355,7 +2361,7 @@ function renderToday(){
   l.innerHTML=h;
 }
 function doneReminder(id){APP.reminders.forEach(function(r){if(r.id===id)r.completed=true});saveLocal();updateBell();renderToday();if(APP.currentMode==="reminders")renderMyReminders()}
-function deleteReminder(id){if(!confirm("حذف یادآور؟"))return;APP.reminders=APP.reminders.filter(function(r){return r.id!==id});saveLocal();updateBell();renderToday();if(APP.currentMode==="reminders")renderMyReminders()}
+function deleteReminder(id){if(!confirm("حذف یادآور؟"))return;var r=APP.reminders.find(function(x){return x.id===id});if(r){r.deleted=true;r.updatedAt=Date.now();}saveLocal();updateBell();renderToday();if(APP.currentMode==="reminders")renderMyReminders()}
 
 // STATS
 function renderStats(){
@@ -2415,7 +2421,7 @@ function renderAdvancedReports(){
   }
   h+='<div class="report-card"><div class="report-title">📅 خلاصه ۷ روز</div><div class="report-summary"><div class="report-summary-item"><div class="report-summary-value" style="color:var(--blue)">'+toPe(w7v)+'</div><div class="report-summary-label">بازدید ۷ روز</div></div><div class="report-summary-item"><div class="report-summary-value" style="color:var(--green)">'+toPe(w7o)+'</div><div class="report-summary-label">سفارش ۷ روز</div></div><div class="report-summary-item"><div class="report-summary-value" style="color:var(--orange)">'+fmtView(w7s)+'</div><div class="report-summary-label">فروش ۷ روز</div></div><div class="report-summary-item"><div class="report-summary-value" style="color:var(--purple)">'+toPe(w7v>0?Math.round(w7v/7):0)+'</div><div class="report-summary-label">میانگین روزانه</div></div></div></div>';
 
-  var rems=APP.reminders.filter(function(r){return!r.completed});
+  var rems=APP.reminders.filter(function(r){return!r.deleted&&!r.completed});
   h+='<div class="report-card"><div class="report-title">🔔 یادآورهای فعال ('+toPe(rems.length)+')</div>';
   if(!rems.length)h+='<div style="text-align:center;color:var(--tx4);padding:10px">یادآوری نیست</div>';
   else{
@@ -2454,12 +2460,21 @@ function mergeById(localArr,remoteArr){
     var key=String(l.id);
     if(seen[key]!==undefined){
       var existing=result[seen[key]];
-      var lTime=l.updatedAt||l.createdAt||"";
-      var rTime=existing.updatedAt||existing.createdAt||"";
+      var lTime=l.updatedAt||l.createdAt||0;
+      var rTime=existing.updatedAt||existing.createdAt||0;
+      // آخرین تغییر (چه delete چه edit) برنده است — تومبستون هم با همین قانون merge میشه
       if(lTime>=rTime)result[seen[key]]=l;
     }else{
       result.push(l);seen[key]=result.length-1;
     }
+  });
+  // تومبستون‌های قدیمی‌تر از ۳۰ روز رو پاک کن تا حجم داده رشد نکنه
+  var THIRTY_DAYS=30*24*60*60*1000;
+  var now=Date.now();
+  result=result.filter(function(x){
+    if(!x.deleted)return true;
+    var t=x.updatedAt||x.createdAt||0;
+    return (now-t) < THIRTY_DAYS;
   });
   return result;
 }
