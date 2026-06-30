@@ -443,6 +443,7 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     <div class="action-menu">
       <button class="mode-btn" id="btnPrint">🖨️ چاپ</button>
       <button class="mode-btn" id="btnExportProducts">📊 اکسل</button>
+      <button class="mode-btn" id="btnMyBackup" style="display:none">💾 بکاپ من</button>
     </div>
   </div>
 
@@ -770,6 +771,33 @@ body.print-rows-120 .print-header h1{font-size:11pt!important}
     <div class="btn-row" style="margin-top:16px">
       <button class="btn btn-green" id="adminLoginOk" style="flex:1">✅</button>
       <button class="btn btn-gray" id="adminLoginCancel" style="flex:1">انصراف</button>
+    </div>
+  </div>
+</div>
+
+<!-- MY BACKUP (VISITOR) -->
+<div class="modal-overlay" id="modalMyBackup">
+  <div class="modal">
+    <h2>💾 بکاپ من</h2>
+    <div style="font-size:.8rem;color:var(--tx2);margin-bottom:12px;line-height:1.7">
+      یه فایل از بازدیدها، مشتری‌ها، سفارش‌ها و یادآورهای خودت می‌سازه و روی گوشیت ذخیره می‌کنه — نیازی به اینترنت نداره.
+      تغییراتی که آفلاین ثبت می‌کنی همین الانش هم خودکار روی گوشیت می‌مونه و وقتی اینترنت وصل بشه خودکار ارسال می‌شه؛
+      این بکاپ فقط یه نسخه‌ی پشتیبان اضافه‌ست برای اطمینان بیشتر.
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue" style="flex:1" onclick="downloadMyBackup()">💾 گرفتن بکاپ</button>
+      <button class="btn btn-purple" style="flex:1" onclick="openMyRestorePanel()">📥 بازگردانی از فایل</button>
+    </div>
+    <input type="file" id="myRestoreFileInput" accept="application/json,.json" style="display:none" onchange="onMyRestoreFileSelected(event)">
+    <div id="myRestorePanel" class="hidden" style="margin-top:12px;background:var(--bg);padding:12px;border-radius:8px;border:1px solid var(--bd)">
+      <div id="myRestoreFileInfo" style="font-size:.8rem;color:var(--tx2);margin-bottom:8px"></div>
+      <div class="btn-row">
+        <button class="btn btn-green" style="flex:1" onclick="applyMyRestore()">✅ اعمال بازگردانی</button>
+        <button class="btn btn-gray" style="flex:1" onclick="closeMyRestorePanel()">❌ انصراف</button>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-gray" style="flex:1" onclick="hideMyBackupModal()">بستن</button>
     </div>
   </div>
 </div>
@@ -1234,6 +1262,94 @@ function applyRestore(){
   closeRestorePanel();
   toast("بازگردانی انجام شد ✅ ("+names+")");
 }
+// ── بکاپ/بازگردانی مخصوص ویزیتور (فقط داده‌های خودش) ─────────────────────
+function openMyBackupModal(){
+  if(!APP.currentVisitor){toast("اول وارد شو",1);return}
+  $("myRestorePanel").classList.add("hidden");
+  $("myRestoreFileInput").value="";
+  _myRestoreParsedData=null;
+  $("modalMyBackup").classList.add("show");
+}
+function hideMyBackupModal(){$("modalMyBackup").classList.remove("show")}
+function downloadMyBackup(){
+  try{
+    var v=APP.currentVisitor;
+    var data={
+      backupDate:todayISO(),
+      backupAt:new Date().toISOString(),
+      visitor:v,
+      products:APP.products,
+      visits:APP.visits.filter(function(x){return x.visitor===v}),
+      customers:APP.customers.filter(function(x){return x.visitor===v}),
+      orders:APP.orders.filter(function(x){return x.visitor===v}),
+      reminders:APP.reminders.filter(function(x){return x.visitor===v})
+    };
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a");
+    a.href=url;
+    a.download="backup-"+v.replace(/[^a-zA-Z0-9آ-ی_-]/g,"_")+"-"+todayISO()+".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url)},2000);
+    toast("بکاپ دانلود شد ✅");
+  }catch(e){
+    toast("خطا در ساخت بکاپ",1);
+  }
+}
+var _myRestoreParsedData=null;
+function openMyRestorePanel(){
+  $("myRestoreFileInput").value="";
+  $("myRestorePanel").classList.add("hidden");
+  _myRestoreParsedData=null;
+  $("myRestoreFileInput").click();
+}
+function closeMyRestorePanel(){
+  $("myRestorePanel").classList.add("hidden");
+  _myRestoreParsedData=null;
+}
+function onMyRestoreFileSelected(ev){
+  var f=ev.target.files&&ev.target.files[0];
+  if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(typeof data!=="object"||data===null)throw new Error("invalid");
+      _myRestoreParsedData=data;
+      var info="📄 "+esc(f.name);
+      if(data.backupDate)info+=" — تاریخ بکاپ: "+esc(data.backupDate);
+      info+="<br>";
+      info+="📍 بازدید: "+toPe((data.visits||[]).length)+" | ";
+      info+="📞 مشتری: "+toPe((data.customers||[]).length)+" | ";
+      info+="🧾 سفارش: "+toPe((data.orders||[]).length)+" | ";
+      info+="🔔 یادآور: "+toPe((data.reminders||[]).length);
+      $("myRestoreFileInfo").innerHTML=info;
+      $("myRestorePanel").classList.remove("hidden");
+    }catch(err){
+      toast("فایل بکاپ نامعتبر است",1);
+      _myRestoreParsedData=null;
+    }
+  };
+  reader.readAsText(f);
+}
+function applyMyRestore(){
+  if(!_myRestoreParsedData){toast("ابتدا فایل را انتخاب کنید",1);return}
+  if(!confirm("⚠️ بازدیدها، مشتری‌ها، سفارش‌ها و یادآورهای خودت با محتوای این فایل ترکیب می‌شه (چیزی که الان داری پاک نمی‌شه، فقط موارد جدید یا جدیدتر از فایل اضافه/آپدیت می‌شه). ادامه می‌دی؟"))return;
+  var v=APP.currentVisitor;
+  ["visits","customers","orders","reminders"].forEach(function(key){
+    var incoming=(_myRestoreParsedData[key]||[]).filter(function(x){return x&&x.visitor===v});
+    APP[key]=mergeById(APP[key],incoming);
+  });
+  saveLocal();
+  renderAll();
+  updateBell();
+  closeMyRestorePanel();
+  hideMyBackupModal();
+  toast("بازگردانی انجام شد ✅");
+}
+
 function fillJDateSelects(prefix,presetISO){
   var ty=$(prefix+"Year"),tm=$(prefix+"Month"),td=$(prefix+"Day");
   if(!ty||!tm||!td)return;
@@ -1392,6 +1508,7 @@ function updateTopUI(){
   }
 
   $("fabVisit").classList.toggle("show",!!APP.currentVisitor&&!APP.isAdmin);
+  $("btnMyBackup").style.display=(APP.currentVisitor&&!APP.isAdmin)?"":"none";
   updateCartUI();
   updateBell();
 }
@@ -3274,6 +3391,7 @@ window.onload=function(){
   $("saveLocalBtn").onclick=function(){saveLocal();toast("ذخیره شد")};
   $("exportBtn2").onclick=exportProductsExcel;
   $("btnExportProducts").onclick=exportProductsExcel;
+  $("btnMyBackup").onclick=openMyBackupModal;
   $("clearAllBtn").onclick=clearAllProducts;
   $("btnPrint").onclick=printAllProducts;
 
