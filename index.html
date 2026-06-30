@@ -2643,6 +2643,19 @@ function mergeById(localArr,remoteArr){
 var _syncRetryTimer = null;
 var _fbReachable = true;
 var _userEditingPriceField = false;
+var _pendingRerenderProducts = false;
+var _pendingRerenderMeta = null;
+function isUserInteracting(){
+  var ae=document.activeElement;
+  if(ae){
+    var tag=ae.tagName;
+    if(tag==="INPUT"||tag==="SELECT"||tag==="TEXTAREA")return true;
+  }
+  // اگه یک مودال ورودی فعلاً بازه (سبد خرید، ویرایش، بازدید، مشتری) صبر کن
+  var openModals=document.querySelectorAll(".modal-overlay.show");
+  if(openModals.length)return true;
+  return false;
+}
 
 // ── خواندن و نوشتن صف از localStorage ────────────────────────────────────────
 function getPendingSync(){
@@ -3035,10 +3048,10 @@ function applyRemoteProducts(d){
     return p;
   });
   saveLocal();
-  // اگه کاربر همین الان داره روی یک فیلد قیمت تایپ می‌کنه، جدول رو رندر نکن
-  // چون باعث می‌شه input از زیر دستش عوض بشه و فوکوس/مقدار در حال تایپ از بین بره.
-  // به محض اینکه فیلد رو ترک کرد (blur)، خودش رندر می‌شه.
-  if(_userEditingPriceField){ logSync("⏸ بروزرسانی جدول به‌خاطر ویرایش فعال به تعویق افتاد"); return; }
+  // اگه کاربر همین الان داره با یک فرم/فیلد/مودال تعامل می‌کنه، جدول رو رندر نکن
+  // چون باعث می‌شه ورودی از زیر دستش عوض بشه و فوکوس/مقدار در حال تایپ از بین بره.
+  // به‌محض اینکه آزاد شد، خودکار رندر می‌شه.
+  if(_userEditingPriceField || isUserInteracting()){ _pendingRerenderProducts=true; return; }
   renderAll(); logSync("✅ محصولات بروز شد");
 }
 
@@ -3066,7 +3079,11 @@ function applyRemoteMeta(d){
   // همیشه ذخیره/رندر کن — نه فقط وقتی طول آرایه عوض میشه.
   // ویرایش و حذف (تومبستون) باعث تغییر طول آرایه نمیشن ولی باید اعمال بشن.
   changed = true;
-  if(changed){ saveLocal(); renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد"); }
+  if(changed){
+    saveLocal();
+    if(_userEditingPriceField || isUserInteracting()){ _pendingRerenderMeta=true; return; }
+    renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد");
+  }
 }
 
 function startFirebaseListeners(){
@@ -3104,6 +3121,11 @@ window.addEventListener("offline", function(){
   updateNetStatusBadge();
 });
 setInterval(updateNetStatusBadge, 5000);
+setInterval(function(){
+  if(isUserInteracting())return;
+  if(_pendingRerenderProducts){ _pendingRerenderProducts=false; renderAll(); logSync("✅ محصولات بروز شد (به‌تعویق‌افتاده)"); }
+  if(_pendingRerenderMeta){ _pendingRerenderMeta=false; renderAll(); updateTopUI(); logSync("✅ داده‌ها بروز شد (به‌تعویق‌افتاده)"); }
+},1500);
 
 // وقتی tab دوباره visible میشه (کاربر برمیگرده)، داده رو refresh کن
 document.addEventListener("visibilitychange", function(){
