@@ -2681,13 +2681,35 @@ function downloadProductsJB(s){
 // Meta (ویزیتور، مشتری، سفارش، بازدید، یادآور)
 // هر کاربر تغییر میده → merge دو طرفه، جدیدتر برنده
 // ══════════════════════════════════════════════════════════════════════════════
+var _uploadMetaInFlight = false;
+var _uploadMetaQueued = false;
+
 function uploadMeta(s,doneCb){
   if(!CFG.fbApiKey){if(!s)toast("Firebase تنظیم نشده",1);return}
+  // اگه همین الان یک uploadMeta در حال اجراست، این درخواست رو صف کن
+  // (موازی اجرا کردن چندتا uploadMeta باعث میشه روی هم overwrite کنن و تغییرات گم بشه)
+  if(_uploadMetaInFlight){
+    _uploadMetaQueued = true;
+    if(doneCb) doneCb();
+    return;
+  }
+  _uploadMetaInFlight = true;
   // قبل از ارسال، اول نسخه فعلی Firebase رو بگیر و merge کن
   // تا تغییرات کاربر دیگه‌ای که هم‌زمان ثبت شده پاک نشه
   var got=false;
+  var timeoutId=setTimeout(function(){
+    if(!got){
+      // واقعاً fbGet جواب نداد (نه این‌که کند بوده) — صف کن و دست بکش
+      _uploadMetaInFlight=false;
+      markPending("meta");
+      scheduleSyncRetry();
+      if(_uploadMetaQueued){ _uploadMetaQueued=false; uploadMeta(true); }
+    }
+  },8000);
   fbGet("meta",function(remote){
+    if(got)return; // اگه تایمر قبلاً fail اعلام کرده، دیگه ادامه نده
     got=true;
+    clearTimeout(timeoutId);
     if(remote){
       if(remote.visitors){
         var rv=remote.visitors;
@@ -2714,14 +2736,12 @@ function uploadMeta(s,doneCb){
     fbSet("meta",data,function(){
       saveLocal();renderAll();updateTopUI();
       if(!s)toast("همگام‌سازی ✅");
+      _uploadMetaInFlight=false;
       if(doneCb) doneCb();
+      // اگه در این فاصله تغییر جدیدی اومد، یک‌بار دیگه sync کن تا گم نشه
+      if(_uploadMetaQueued){ _uploadMetaQueued=false; uploadMeta(true); }
     });
   });
-  // اگه دریافت نسخه remote شکست خورد (مثلاً VPN قطعه)، تغییرات local رو
-  // به صف pending اضافه کن تا بعداً (با merge درست) ارسال بشه — گمش نکن
-  setTimeout(function(){
-    if(!got){ markPending("meta"); scheduleSyncRetry(); }
-  },4000);
 }
 
 function downloadMeta(s){
@@ -2841,6 +2861,9 @@ function applyRemoteProducts(d){
 function applyRemoteMeta(d){
   if(!d) return;
   if(_blockDownloadUntilFlushed) return;
+  // اگه همین الان uploadMeta در حال merge/ارسال هست، این listener رو نادیده بگیر
+  // چون به‌زودی uploadMeta خودش نتیجه‌ی merge‌شده رو میفرسته و این داده هم توش لحاظ میشه
+  if(_uploadMetaInFlight) return;
   var changed = false;
   if(d.visitors){
     var rv = d.visitors;
