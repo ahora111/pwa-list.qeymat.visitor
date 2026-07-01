@@ -562,6 +562,219 @@ thead th{background:var(--sf2);color:var(--tx2)}
 @keyframes mpFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes mpPop{from{opacity:0;transform:scale(.93) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 
+/* ══════════════════════════════════════════════════════════════
+   PHASE 2 — cards, tables, forms. Same classes/IDs, CSS only.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- Search box ---------- */
+.search-box{background:var(--sf);border:1.5px solid var(--bd);box-shadow:var(--shadow)}
+.search-box:focus-within{background:var(--sf)}
+.search-box span:first-child{font-size:1rem;opacity:.6}
+
+/* ---------- Table ---------- */
+.table-wrap{border:1px solid var(--bd)}
+thead th{font-size:.72rem;letter-spacing:.2px;border-bottom:1px solid var(--bd)}
+tbody tr{position:relative}
+tbody tr:hover td:first-child::before{content:"";position:absolute;right:0;top:0;bottom:0;width:3px;background:var(--blue)}
+.p-name{font-weight:600}
+.price-cash,.price-check,.price-months{display:inline-flex;align-items:center;gap:2px}
+
+/* ---------- Product mobile cards ---------- */
+.mobile-card{border:1px solid var(--bd);position:relative;overflow:hidden}
+.mobile-card::before{content:"";position:absolute;top:0;right:0;width:3px;height:100%;background:linear-gradient(var(--blue),var(--purple));opacity:.7}
+.mc-name{font-size:.95rem}
+.mc-price-item{border-radius:12px;position:relative}
+.mc-price-item:has(.price-cash){border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.06)}
+.mc-price-item:has(.price-check){border-color:rgba(217,119,6,.25);background:rgba(217,119,6,.06)}
+.mc-price-value{font-size:1rem}
+
+/* ---------- Admin mobile cards ---------- */
+.mobile-admin-card{border:1px solid var(--bd)}
+.mobile-admin-card:has(.product-check:checked){border-color:var(--blue);background:var(--accent-soft)}
+.mac-name{font-size:.92rem}
+.product-check{accent-color:var(--blue);width:19px;height:19px}
+
+/* ---------- Buttons: remaining variants + polish ---------- */
+.btn-red{background:linear-gradient(135deg,var(--red),#ef4444)}
+.btn-gray{background:linear-gradient(135deg,#94a3b8,#78899e)}
+.btn-wa{background:linear-gradient(135deg,var(--wa),#1fb958)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important;filter:none!important}
+.icon-btn{border-radius:9px}
+.cam-trigger{box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* ---------- Inputs / forms (edit-input, modal-row, cart, gallery, map-filter) ---------- */
+.edit-input,.modal-row input,.modal-row select,.modal-row textarea,
+.cart-customer-section input,.cart-customer-section textarea,
+.map-filter select,.jdate-row select,.customer-search input,.search-box input{
+  border-radius:var(--radius-sm);
+  background:var(--sf2);
+}
+.edit-input:focus,.modal-row input:focus,.modal-row select:focus,.modal-row textarea:focus,
+.cart-customer-section input:focus,.cart-customer-section textarea:focus{
+  background:var(--sf);
+  box-shadow:0 0 0 4px rgba(79,86,232,.12);
+}
+.modal-row label{font-weight:600}
+.jdate-row select{border-radius:9px}
+.password-input{border-radius:14px;letter-spacing:8px}
+
+/* ---------- Panels / section headers ---------- */
+.panel{border:1px solid var(--bd)}
+.tab-bar{border-bottom:1px solid var(--bd);gap:4px}
+.tab-btn{border-radius:10px;font-weight:600}
+.tab-btn.active{box-shadow:0 3px 10px rgba(79,86,232,.3)}
+
+/* ---------- Info / status / entity cards ---------- */
+.customer-card,.order-card,.visit-card{border:1px solid var(--bd);position:relative;padding-right:16px}
+.customer-card::before,.order-card::before,.visit-card::before{
+  content:"";position:absolute;right:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--blue);
+}
+.order-card::before{background:var(--green)}
+.visit-card::before{background:var(--pink)}
+.cc-shop,.oc-num,.vc-shop{letter-spacing:.1px}
+.cc-visitor-tag,.vc-visitor{border-radius:20px;font-weight:700}
+.today-item{border:1px solid var(--bd)}
+
+/* ---------- Stat / report cards ---------- */
+.stat-card{border:1px solid var(--bd);position:relative}
+.stat-value{font-size:1.65rem}
+.report-card{border:1px solid var(--bd)}
+.report-bar-track{border-radius:20px}
+.report-bar-fill{border-radius:20px}
+
+/* ---------- Selection bar ---------- */
+.selection-bar.show{border-radius:14px;box-shadow:var(--shadow)}
+
+/* ---------- Empty states ---------- */
+.empty-state{border:1.5px dashed var(--bd2);border-radius:16px;background:var(--sf2)}
+.empty-state .big{opacity:.55}
+
+/* ---------- Upload / gallery boxes ---------- */
+.upload-box,.gallery-upload{border-radius:var(--radius);background:var(--sf2)}
+.upload-box:hover,.gallery-upload:hover{transform:translateY(-1px)}
+.gallery-item{border-radius:12px}
+
+/* ---------- Cart ---------- */
+.cart-item{border-radius:12px;border:1px solid var(--bd)}
+.cart-qty button{border-radius:8px}
+.cart-summary,.cart-customer-section{border-radius:14px}
+
+/* ---------- Login modals ---------- */
+.login-icon{box-shadow:0 6px 20px rgba(79,86,232,.35)}
+
+/* ---------- Badges ---------- */
+.badge{font-weight:700}
+.mc-num,.mac-num{border-radius:8px}
+
+/* ══════════════════════════════════════════════════════════════
+   PHASE 3 — professional desktop layout + final mobile polish.
+   Still CSS-only: no markup restructuring, no JS/Firebase touched.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- Sidebar active-pill: smooth grow instead of pop ---------- */
+.side-link::before{
+  content:"";position:absolute;left:2px;top:50%;transform:translateY(-50%);
+  width:4px;height:0;background:var(--blue);border-radius:6px;transition:height .18s ease;
+}
+.side-link.active::before{height:56%}
+.side-link:hover{transform:translateX(-2px)}
+
+/* ---------- Keyboard focus (accessibility) ---------- */
+.side-link:focus-visible,.bn-link:focus-visible,.btn:focus-visible,
+.mode-btn:focus-visible,.tab-btn:focus-visible,.icon-btn:focus-visible,
+.theme-toggle:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* ---------- Desktop container & breathing room ---------- */
+@media(min-width:1024px){
+  .container{padding:22px 30px}
+  .search-box{top:calc(var(--header-h) + 10px)}
+  .modal{padding:26px}
+  .modal h2{font-size:1.15rem}
+}
+@media(min-width:1440px){
+  .container{max-width:1560px}
+}
+
+/* ---------- Desktop: admin "products" tab as a 2-column workspace ---------- */
+@media(min-width:1180px){
+  #adminTab-products{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+  #adminTab-products .panel:first-child{position:sticky;top:calc(var(--header-h) + 18px)}
+}
+
+/* ---------- Desktop: admin "stats" tab, side-by-side summary ---------- */
+@media(min-width:1180px){
+  #adminTab-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  #adminTab-stats .panel:nth-child(3){grid-column:1/-1}
+}
+
+/* ---------- Desktop: roomier modals for content-heavy dialogs ---------- */
+@media(min-width:1024px){
+  .gallery-modal{max-width:760px}
+  .cart-modal{max-width:600px}
+  .invoice-modal{max-width:580px}
+  #modalCustomerOrders .modal{max-width:600px}
+  .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+}
+
+/* ---------- Desktop table: a touch more room to breathe ---------- */
+@media(min-width:1024px){
+  thead th{padding:13px 12px}
+  tbody td{padding:11px 10px}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PHASE 4 — final polish: micro-interactions, scrollbars, hover
+   depth, dark-mode detail pass. Still CSS-only.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- Custom scrollbars (theme-aware) ---------- */
+.sidebar,.modal,.visitor-list,.visitor-manage-list,.table-scroll,
+#mapContainer,#myMapContainer{scrollbar-width:thin;scrollbar-color:var(--bd2) transparent}
+.sidebar::-webkit-scrollbar,.modal::-webkit-scrollbar,.visitor-list::-webkit-scrollbar,
+.visitor-manage-list::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb,.modal::-webkit-scrollbar-thumb,
+.visitor-list::-webkit-scrollbar-thumb,.visitor-manage-list::-webkit-scrollbar-thumb{
+  background:var(--bd2);border-radius:10px;
+}
+
+/* ---------- Selected table row (desktop) mirrors mobile card highlight ---------- */
+tbody tr:has(.product-check:checked){background:var(--accent-soft)}
+
+/* ---------- Hover depth on desktop only (avoid sticky :hover on touch) ---------- */
+@media(hover:hover) and (pointer:fine){
+  .mobile-card:hover,.mobile-admin-card:hover,.customer-card:hover,
+  .order-card:hover,.visit-card:hover,.stat-card:hover,.report-card:hover{
+    box-shadow:var(--shadow-md);transform:translateY(-2px);
+  }
+  .fab-visit:hover,.cart-fab:hover{transform:translateY(-2px) scale(1.03)}
+  .gallery-item:hover img{transform:scale(1.06)}
+  .visitor-item:hover{transform:translateY(-1px)}
+}
+.gallery-item img{transition:transform .25s ease}
+
+/* ---------- Toast / auto-save / install banner ---------- */
+.toast{border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.auto-save-ind{border-radius:24px;box-shadow:0 6px 18px rgba(5,150,105,.35)}
+.install-banner{border-radius:16px;box-shadow:0 12px 30px rgba(79,86,232,.35)}
+
+/* ---------- Tab bar: active tab lift ---------- */
+.tab-btn.active{transform:translateY(-1px)}
+
+/* ---------- Checkboxes / radios ---------- */
+input[type="checkbox"],input[type="radio"]{accent-color:var(--blue)}
+
+/* ---------- Bell badge: subtle glow to draw the eye without being loud ---------- */
+.bell-badge{box-shadow:0 0 0 3px var(--sf)}
+
+/* ---------- Dark mode: keep printable/shareable surfaces (invoice) intentionally light ---------- */
+html[data-theme="dark"] .invoice-container,html[data-theme="dark"] .invoice-info,
+html[data-theme="dark"] .invoice-table th,html[data-theme="dark"] .invoice-table td,
+html[data-theme="dark"] .invoice-total-section{color-scheme:light}
+
+/* ---------- Dark mode: soften pure-white glare on surfaces ---------- */
+html[data-theme="dark"] .theme-toggle{background:var(--accent-soft)}
+html[data-theme="dark"] .modal-overlay{background:rgba(0,0,0,.7)}
+
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
 }
