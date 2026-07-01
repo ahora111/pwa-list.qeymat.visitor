@@ -1057,6 +1057,105 @@ tbody tr:hover{
     color:#000 !important;
   }
 }
+.header-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+}
+
+.brand-box{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.brand-info h1{
+  margin:0;
+  font-size:1.15rem;
+  font-weight:800;
+}
+
+.brand-subtitle{
+  font-size:.78rem;
+  color:var(--text-muted);
+  margin-top:2px;
+}
+
+.header-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.header-stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:14px;
+}
+
+.header-chip{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 14px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid var(--border);
+  font-size:.78rem;
+  font-weight:700;
+}
+
+.header-chip-count{
+  background:#eef2ff;
+  color:#4338ca;
+}
+
+.header-chip-date{
+  background:#f8fafc;
+}
+
+.header-chip-visitor{
+  background:#fff7ed;
+  color:#c2410c;
+  cursor:pointer;
+}
+
+.header-chip-online{
+  background:#dcfce7;
+  color:#15803d;
+}
+
+.header-chip-sync{
+  background:#fee2e2;
+  color:#b91c1c;
+  cursor:pointer;
+}
+
+@media(max-width:768px){
+
+  .header-top{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .header-actions{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .header-stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    width:100%;
+  }
+
+  .header-chip{
+    justify-content:center;
+  }
+
+}
 </style>
 </head>
 <body>
@@ -1065,22 +1164,78 @@ tbody tr:hover{
 
 <header class="header no-print">
   <div class="header-inner">
-    <div class="logo">
-      <div class="logo-icon">💰</div>
-      <div>
-        <h1 id="shopNameView">اهورا</h1>
-        <small>پخش موبایل</small>
+
+    <div class="header-top">
+
+      <div class="brand-box">
+        <div class="logo-icon">
+          💰
+        </div>
+
+        <div class="brand-info">
+          <h1 id="shopNameView">اهورا</h1>
+          <div class="brand-subtitle">
+            سیستم مدیریت پخش موبایل
+          </div>
+        </div>
       </div>
+
+      <div class="header-actions">
+
+        <button class="bell-btn" id="bellBtn" onclick="toggleTodayPanel()">
+          🔔
+          <span class="bell-badge hide" id="bellBadge">۰</span>
+        </button>
+
+        <button class="user-status visitor" id="userStatus">
+          <span id="userStatusIcon">👤</span>
+          <span id="userStatusText">ویزیتور</span>
+        </button>
+
+      </div>
+
     </div>
-    <div class="header-right">
-      <div class="badge badge-dark" id="dateView"></div>
-      <div class="badge badge-blue" id="countView">۰ کالا</div>
-      <div class="badge badge-orange" id="currentVisitorBadge" style="display:none" onclick="changeVisitor()">👤 <span id="currentVisitorName">-</span></div>
-      <span id="netStatusBadge" title="وضعیت اتصال" style="background:#16a34a;color:#fff;padding:4px 9px;border-radius:7px;font-size:.72rem;font-weight:700">🟢 آنلاین</span>
-      <span id="syncPendingBadge" title="تغییرات ارسال نشده — در انتظار VPN" onclick="flushPendingSync()" style="display:none;background:#dc2626;color:#fff;padding:4px 9px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;animation:bellPulse 1.5s infinite">⏳ صف</span>
-      <button class="bell-btn" id="bellBtn" onclick="toggleTodayPanel()">🔔<span class="bell-badge hide" id="bellBadge">۰</span></button>
-      <button class="user-status visitor" id="userStatus"><span id="userStatusIcon">👤</span><span id="userStatusText">ویزیتور</span></button>
+
+    <div class="header-stats">
+
+      <div class="header-chip header-chip-date">
+        <span>📅</span>
+        <span id="dateView"></span>
+      </div>
+
+      <div class="header-chip header-chip-count">
+        <span>📦</span>
+        <span id="countView">۰ کالا</span>
+      </div>
+
+      <div
+        class="header-chip header-chip-visitor"
+        id="currentVisitorBadge"
+        style="display:none"
+        onclick="changeVisitor()"
+      >
+        👤
+        <span id="currentVisitorName">-</span>
+      </div>
+
+      <div
+        id="netStatusBadge"
+        class="header-chip header-chip-online"
+      >
+        🟢 آنلاین
+      </div>
+
+      <div
+        id="syncPendingBadge"
+        class="header-chip header-chip-sync"
+        style="display:none"
+        onclick="flushPendingSync()"
+      >
+        ⏳ در صف
+      </div>
+
     </div>
+
   </div>
 </header>
 
