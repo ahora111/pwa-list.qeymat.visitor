@@ -559,7 +559,7 @@ thead th{background:var(--sf2);color:var(--tx2)}
 #secCustomers:not(.hidden),#secVisits:not(.hidden),#secReminders:not(.hidden){
   animation:mpFadeUp .3s ease;
 }
-@keyframes mpFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mpFadeUp{from{opacity:0}to{opacity:1}}
 @keyframes mpPop{from{opacity:0;transform:scale(.93) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
 
 /* ══════════════════════════════════════════════════════════════
@@ -775,6 +775,105 @@ html[data-theme="dark"] .invoice-total-section{color-scheme:light}
 html[data-theme="dark"] .theme-toggle{background:var(--accent-soft)}
 html[data-theme="dark"] .modal-overlay{background:rgba(0,0,0,.7)}
 
+/* ══════════════════════════════════════════════════════════════
+   PHASE 5 — requested fixes: header cleanup, collapsible tools,
+   sticky search, lively bottom-nav, login buttons, lively header.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ---------- 1) Mobile: hide item-count + "ویزیتور" word while in visitor mode ---------- */
+@media(max-width:1023px){
+  #userStatus.visitor #userStatusText{display:none}
+  #userStatus.visitor #userStatusIcon{margin:0}
+  .header-right:has(#userStatus.visitor) #countView{display:none}
+}
+
+/* ---------- 2) Collapsible tools row (print / excel / my-backup), closed by default ---------- */
+@media(max-width:1023px){
+  .mode-toggle{flex-wrap:wrap}
+  .tools-toggle{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--sf);border:1.5px solid var(--bd);color:var(--tx2);
+    padding:9px 16px;border-radius:12px;font-size:.8rem;font-weight:700;
+    cursor:pointer;box-shadow:var(--shadow);font-family:inherit;
+  }
+  .tools-toggle .chev{display:inline-block;transition:transform .25s ease;font-size:.85rem;color:var(--tx3)}
+  .tools-toggle.open{color:var(--blue);border-color:var(--blue)}
+  .tools-toggle.open .chev{transform:rotate(180deg)}
+  .action-menu{
+    display:flex!important;width:100%!important;flex-wrap:wrap;
+    overflow:hidden;max-height:0;opacity:0;margin-top:0;gap:8px;
+    transition:max-height .28s ease,opacity .22s ease,margin-top .28s ease;
+  }
+  .action-menu.open{max-height:140px;opacity:1;margin-top:9px}
+}
+@media(min-width:1024px){.tools-toggle{display:none}}
+
+/* ---------- 3) Sticky search: make sure it wins the stacking/positioning fight ---------- */
+.search-box{position:sticky;z-index:48;will-change:auto}
+@media(max-width:1023px){
+  .search-box{top:calc(var(--header-h) + 6px)}
+}
+
+/* ---------- 4) Bottom nav: floating dock with color + motion, not flat/lifeless ---------- */
+:root{--bn-h:78px}
+.bottom-nav{
+  right:10px;left:10px;bottom:calc(10px + var(--sab));
+  border-radius:24px;
+  border:1px solid var(--bd);
+  box-shadow:0 16px 40px rgba(15,23,42,.18),0 2px 10px rgba(15,23,42,.08);
+  padding:7px 6px;
+  backdrop-filter:blur(16px) saturate(160%);
+  background:color-mix(in srgb, var(--sf) 92%, transparent);
+}
+.bn-link{gap:3px;padding:6px 4px;border-radius:16px}
+.bn-link .bn-icon{
+  width:40px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:13px;font-size:1.28rem;
+  transition:background-color .22s ease,transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+.bn-link .bn-label{font-weight:600;transition:font-weight .15s ease}
+.bn-link.active .bn-icon{transform:translateY(-3px) scale(1.08)}
+.bn-link.active .bn-label{font-weight:800}
+.bn-link:active .bn-icon{transform:scale(.88)}
+.bn-link[data-nav="products"].active{color:var(--blue)}
+.bn-link[data-nav="products"].active .bn-icon{background:var(--accent-soft)}
+.bn-link[data-nav="orders"].active{color:var(--green)}
+.bn-link[data-nav="orders"].active .bn-icon{background:rgba(5,150,105,.14)}
+.bn-link[data-nav="customers"].active{color:var(--purple)}
+.bn-link[data-nav="customers"].active .bn-icon{background:rgba(124,58,237,.14)}
+.bn-link[data-nav="visits"].active{color:var(--pink)}
+.bn-link[data-nav="visits"].active .bn-icon{background:rgba(219,39,119,.14)}
+.bn-link[data-nav="admin"].active{color:var(--orange)}
+.bn-link[data-nav="admin"].active .bn-icon{background:rgba(234,88,12,.14)}
+
+/* ---------- 5) Login modal buttons: clearer, more confident ---------- */
+.login-modal .btn-row{gap:10px;margin-top:18px!important}
+.login-modal .btn-row .btn{
+  min-height:50px;font-size:.88rem;border-radius:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  letter-spacing:.2px;
+}
+.login-modal .btn-gray{background:var(--sf2);color:var(--tx2);border:1.5px solid var(--bd2);box-shadow:none}
+.login-modal .btn-gray:hover{background:var(--bd)}
+.login-modal .btn-green{box-shadow:0 8px 22px rgba(5,150,105,.32)}
+
+/* ---------- 6) Header: give it some life too ---------- */
+.header{position:relative;overflow:visible;animation:headerIn .4s ease}
+.header::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+  background:linear-gradient(90deg,var(--blue),var(--purple) 50%,var(--pink));
+  opacity:.55;
+}
+.logo-icon{position:relative;z-index:1}
+.logo-icon::before{
+  content:"";position:absolute;inset:-4px;border-radius:16px;z-index:-1;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  opacity:.3;filter:blur(9px);
+  animation:logoGlow 3s ease-in-out infinite;
+}
+@keyframes logoGlow{0%,100%{opacity:.22}50%{opacity:.48}}
+@keyframes headerIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
 }
@@ -842,7 +941,10 @@ html[data-theme="dark"] .modal-overlay{background:rgba(0,0,0,.7)}
     <button class="mode-btn" id="modeReminders">⏰ یادآورها</button>
     <button class="mode-btn" id="modeVisits">📍 بازدیدها</button>
     <button class="mode-btn" id="modeAdmin">🔒 مدیریت</button>
-    <div class="action-menu">
+    <button class="tools-toggle" id="toolsToggleBtn" type="button">
+      <span>ابزارها</span><span class="chev">⌄</span>
+    </button>
+    <div class="action-menu" id="actionMenuWrap">
       <button class="mode-btn" id="btnPrint">🖨️ چاپ</button>
       <button class="mode-btn" id="btnExportProducts">📊 اکسل</button>
       <button class="mode-btn" id="btnMyBackup" style="display:none">💾 بکاپ من</button>
@@ -1165,7 +1267,7 @@ html[data-theme="dark"] .modal-overlay{background:rgba(0,0,0,.7)}
     <input type="password" class="password-input" id="visitorLoginPw" placeholder="رمز" inputmode="numeric" maxlength="6">
     <div class="login-error" id="visitorLoginErr">رمز اشتباه!</div>
     <div class="btn-row" style="margin-top:16px">
-      <button class="btn btn-green" id="visitorLoginOk" style="flex:1">✅</button>
+      <button class="btn btn-green" id="visitorLoginOk" style="flex:1">✅ ورود</button>
       <button class="btn btn-gray" id="visitorLoginCancel" style="flex:1">بازگشت</button>
     </div>
   </div>
@@ -1179,7 +1281,7 @@ html[data-theme="dark"] .modal-overlay{background:rgba(0,0,0,.7)}
     <input type="password" class="password-input" id="adminPwInput" placeholder="رمز" inputmode="numeric">
     <div class="login-error" id="adminLoginErr">رمز اشتباه!</div>
     <div class="btn-row" style="margin-top:16px">
-      <button class="btn btn-green" id="adminLoginOk" style="flex:1">✅</button>
+      <button class="btn btn-green" id="adminLoginOk" style="flex:1">✅ ورود</button>
       <button class="btn btn-gray" id="adminLoginCancel" style="flex:1">انصراف</button>
     </div>
   </div>
@@ -3975,6 +4077,23 @@ window.onload=function(){
   }
   mirrorText("shopNameView", document.getElementById("sidebarShopName"));
   mirrorText("userStatusText", document.getElementById("sidebarUserText"));
+
+  /* ---------- Collapsible "tools" row (print / excel / my-backup) on mobile ---------- */
+  var toolsBtn=document.getElementById("toolsToggleBtn");
+  var actionMenu=document.getElementById("actionMenuWrap");
+  if(toolsBtn && actionMenu){
+    toolsBtn.addEventListener("click",function(){
+      var isOpen=actionMenu.classList.toggle("open");
+      toolsBtn.classList.toggle("open",isOpen);
+    });
+    // Close the tray again after picking an action, for a tidy default state
+    actionMenu.addEventListener("click",function(e){
+      if(e.target.closest("button")){
+        actionMenu.classList.remove("open");
+        toolsBtn.classList.remove("open");
+      }
+    });
+  }
 })();
 </script>
 </body>
